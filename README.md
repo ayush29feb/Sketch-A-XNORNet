@@ -8,11 +8,17 @@ An implementation of a variation of [Sketch-A-Net] using [XNOR-Net] in [TensorFl
 ## Data
 I will be using the [TU-Berlin Sketch Dataset], which is the most commonly used human sketch dataset. It contains 250 categories with 80 sketches per category. It was collected on Amazon Mechanical Turk from 1350 participants, thus providing a variety of sketches for each category. The images are available in both SVG and PNG format.
 
+## Software Tools
+I will be using Tensorflow as the primary library for this project. However, the XNOR convolutions are not available in Tensorflow Ops, which means part of this project would be create new Ops in the Tensorflow library.
+
 ## Idea
 
 
 ## Milestone
-
+The following tasks should be completed by the milestone on 02/24/2017.
+- [ ] XNOR Convolution Ops in Tensorflow
+- [ ] A simple 2 layer network on MNIST dataset to test XNOR Convolutions Ops
+- [ ] Implement the Sketch-A-Net architecture in Tensorflow
 
 ## References
 - [Sketch-A-Net]: "Sketch-a-Net that Beats Humans"

@@ -14,7 +14,7 @@ Sketching is one of the most natural form of communication among humans since hi
 I will be using the [TU-Berlin Sketch Dataset], which is the most commonly used human sketch dataset. It contains 250 categories with 80 sketches per category. It was collected on Amazon Mechanical Turk from 1350 participants, thus providing a variety of sketches for each category. The images are available in both SVG and PNG format.
 
 ## Software Tools
-I will be using Tensorflow as the primary library for this project. However, the XNOR convolutions are not yet available in Tensorflow Ops, which means part of this project would be create new Ops in the Tensorflow library.
+I will be using [Tensorflow] as the primary library for this project. However, the XNOR convolutions are not yet available in Tensorflow Ops, which means part of this project would be create new Ops in the Tensorflow library.
 
 ## Milestone
 The following tasks should be completed by the milestone on 02/24/2017.

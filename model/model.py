@@ -33,7 +33,7 @@ def inference(images):
         biases2 = bias_variable([128])
         conv2 = tf.nn.conv2d(pool1, weights2, [1, 1, 1, 1], padding='VALID', name='conv2')
         relu2 = tf.nn.relu(tf.nn.bias_add(conv2, biases2), name='relu2')
-        pool2 = tf.nn.max_pool(relu2, ksize=[1, 3, 3, 1], stides=[1, 2, 2, 1], padding='VALID', name='pool2')
+        pool2 = tf.nn.max_pool(relu2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
 
     # Layer 3
     with tf.name_scope('L3') as scope:

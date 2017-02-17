@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import h5py
 from random import randint, uniform
-from scipy.misc import imrotate
+from scipy.ndimage.interpolation import rotate
 
 class DataLayer:
     """
@@ -11,24 +11,24 @@ class DataLayer:
     the nauances of the data-augmentation like random crops, flips, etc.
     """
 
-    def __init__(self, filepath, batch_size=135):
+    def __init__(self, filepath):
         """
         Loads the mat file into images and labels.
         """
         print 'Loading the dataset'
-        self.batch_size = batch_size
         self.train_cursor = 0
+        self.batch_size = 54
 
         data = h5py.File(filepath)
-        sets = data['imdb']['images']['set'][()].reshape(-1)
-        self.X_train = data['imdb']['images']['data'][sets == 1, :, :, :].swapaxes(1, 3)
-        self.y_train = data['imdb']['images']['labels'][sets == 1, :].reshape(-1)
-        self.X_test = data['imdb']['images']['data'][sets == 3, :, :, :].swapaxes(1, 3)
-        self.y_test = data['imdb']['images']['labels'][sets == 3, :].reshape(-1)
+        self.sets = data['imdb']['images']['set'][()].reshape(-1)
+        self.X_dataset = data['imdb']['images']['data'] # [sets == 1, :, :, :].swapaxes(1, 3)
+        self.y_dataset = data['imdb']['images']['labels'] # [sets == 1, :].reshape(-1)
+        # self.X_test = data['imdb']['images']['data'] # [sets == 3, :, :, :].swapaxes(1, 3)
+        # self.y_test = data['imdb']['images']['labels'] # [sets == 3, :].reshape(-1)
 
         print 'Data has been loaded'
         
-    def next_batch(batch_size=None):
+    def next_batch(self, batch_size=None):
         """
         Returns the next batch for the training data with the requested batch_size
         or the current default. This function takes care of all the data augmentation
@@ -44,54 +44,55 @@ class DataLayer:
         if batch_size is None:
             batch_size = self.batch_size
 
-        N = self.X_train.shape[0]
-        input_size = self.X_train.shape[1]
+        N = self.X_dataset.shape[0]
+        input_size = self.X_dataset.shape[2]
         cursor = self.train_cursor % N
         start_idx = cursor
-        end_idx = cursor + batch_size
+        end_idx = cursor + 54
         output_size = 225 # output size
 
         # create the current batch in X, y
         X, y = None, None
         if end_idx < N:
-            X = self.X_train[start_idx:end_idx, :, :, :]
-            y = self.y_train[start_idx:end_idx]
+            X = self.X_dataset[start_idx:end_idx, :, :, :].swapaxes(1, 3) # self.X_train[start_idx:end_idx, :, :, :]
+            y = self.y_dataset[start_idx:end_idx, :].reshape(-1) # self.y_train[start_idx:end_idx]
         else:
             end_idx = end_idx % N
-            X = np.concatenate((self.X_train[start_idx:, :, :, :], self.X_train[:end_idx, :, :, :]), axis=0)
-            y = np.concatenate((self.y_train[start_idx:], self.y_train[:end_idx]), axis=0)
+            X = np.concatenate((self.X_dataset[start_idx:, :, :, :].swapaxes(1, 3), self.X_dataset[:end_idx, :, :, :].swapaxes(1, 3)), axis=0)
+            y = np.concatenate((self.y_dataset[start_idx:].reshape(-1), self.y_dataset[:end_idx].reshape(-1)), axis=0)
         
+        X_train, y_train = np.zeros((54, output_size, output_size, 6)), y
         # Apply the data augmentation for each data point
         for i in range(batch_size):
             # randomly crop the image to be the output size
-            x_ = randint(0, input_size - output_size + 1)
-            y_ = randint(0, input_size - output_size + 1)
-            X[i, :, :, :] = X[i, x_:x_ + output_size - 1, y_:y_ + output_size - 1, :]
+            x_ = randint(0, input_size - output_size)
+            y_ = randint(0, input_size - output_size)
+            X_train[i, :, :, :] = X[i, x_:x_ + output_size, y_:y_ + output_size, :]
 
             # randomly rotate the image
             if uniform(0, 1) > 0.45:
-                X[i, :, :, :] = rotate(X[i, :, :, :], 5, cval=255.0)
+                X_train[i, :, :, :] = rotate(X_train[i, :, :, :], 5, cval=255.0, reshape=False)
 
             # randomly flip the image horizontaly
             if uniform(0, 1) > 0.45:
-                X[i, :, :, :] = np.fliplr(X[i, :, :, :])
+                X_train[i, :, :, :] = np.fliplr(X_train[i, :, :, :])
         
         # Move the train cursor
-        train_cursor += batch_size
-        train_cursor = train_cursor % N
+        self.train_cursor += 80
+        self.train_cursor = self.train_cursor % N
 
-        return (X, y)
+        return (X_train, y_train)
 
-    def test_set():
+    def test_set(self):
         """
         Returns the entire test set with after applying data augmentation
 
         Returns:
             A tuple with the (X, y) containing the testing images and labels
         """
-        X = X_test
+        X = self.X_dataset[self.sets == 3, :, :, :].swapaxes(1, 3)
         X = np.concatenate((X[:, 1:225, 1:225, :], X[:, 32:256, 1:225, :], X[:, 1:225, 32:256, :], X[:, 32:256, 32:256, :], X[:, 16:240, 16:240, :]), axis=0)
         X = np.concatenate((X, np.fliplr(X)), axis=0)
-        y = np.tile(y_test, 10)
+        y = np.tile(self.y_dataset[sets == 3, :].reshape(-1), 10)
 
         return (X, y)

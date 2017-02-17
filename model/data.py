@@ -17,6 +17,7 @@ class DataLayer:
         """
         print 'Loading the dataset'
         self.train_cursor = 0
+        self.test_cursor = 0
         self.batch_size = 54
 
         data = h5py.File(filepath)
@@ -28,7 +29,7 @@ class DataLayer:
 
         print 'Data has been loaded'
         
-    def next_batch(self, batch_size=None):
+    def next_train_batch(self, batch_size=None):
         """
         Returns the next batch for the training data with the requested batch_size
         or the current default. This function takes care of all the data augmentation
@@ -83,16 +84,27 @@ class DataLayer:
 
         return (X_train, y_train)
 
-    def test_set(self):
+    def next_test_batch(self):
         """
         Returns the entire test set with after applying data augmentation
 
         Returns:
             A tuple with the (X, y) containing the testing images and labels
         """
-        X = self.X_dataset[self.sets == 3, :, :, :].swapaxes(1, 3)
-        X = np.concatenate((X[:, 1:225, 1:225, :], X[:, 32:256, 1:225, :], X[:, 1:225, 32:256, :], X[:, 32:256, 32:256, :], X[:, 16:240, 16:240, :]), axis=0)
+        N = self.X_dataset.shape[0]
+        start_idx = self.test_cursor + 54
+        end_idx = self.test_cursor + 80
+
+        X = self.X_dataset[start_idx:end_idx, :, :, :].swapaxes(1, 3)
+        # print X[:, 0:225, 0:225, :].shape
+        # print X[:, 31:257, 0:225, :].shape
+        # print X[:, 0:225, 31:257, :].shape
+        # print X[:, 31:257, 31:257, :].shape
+        # print X[:, 16:241, 16:241, :].shape
+        X = np.concatenate((X[:, 0:225, 0:225, :], X[:, 31:257, 0:225, :], X[:, 0:225, 31:257, :], X[:, 31:257, 31:257, :], X[:, 16:241, 16:241, :]), axis=0)
         X = np.concatenate((X, np.fliplr(X)), axis=0)
-        y = np.tile(self.y_dataset[sets == 3, :].reshape(-1), 10)
+        y = np.tile(self.y_dataset[start_idx:end_idx, :].reshape(-1), 10)
+
+        self.test_cursor = end_idx % N
 
         return (X, y)

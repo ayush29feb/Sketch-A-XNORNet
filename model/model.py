@@ -66,7 +66,7 @@ def inference(images, pretrained=None):
         biases6 = bias_variable([512], pretrained[1], 6)
         fc6 = tf.nn.conv2d(pool5, weights6, [1, 1, 1, 1], padding='VALID', name='fc6')
         relu6 = tf.nn.relu(tf.nn.bias_add(fc6, biases6), name='relu6')
-        dropout6 = tf.nn.dropout(relu6, 0.5, name='dropout6')
+        dropout6 = tf.nn.dropout(relu6, 1.0, name='dropout6')
 
     # Layer 7
     with tf.name_scope('L7') as scope:
@@ -74,7 +74,7 @@ def inference(images, pretrained=None):
         biases7 = bias_variable([512], pretrained[1], 7)
         fc7 = tf.nn.conv2d(dropout6, weights7, [1, 1, 1, 1], padding='VALID', name='fc7')
         relu7 = tf.nn.relu(tf.nn.bias_add(fc7, biases7), name='relu7')
-        dropout7 = tf.nn.dropout(relu7, 0.5, name='dropout7')
+        dropout7 = tf.nn.dropout(relu7, 1.0, name='dropout7')
 
     # Layer 8
     with tf.name_scope('L8') as scope:
@@ -99,5 +99,7 @@ def training(loss, learning_rate):
     return train_op
 
 def evaluation(logits, labels):
-    correct = tf.nn.in_top_k(logits, labels, 1)
+    y_ = tf.argmax(logits, axis=1)
+    tf.summary.histogram('logits', y_)
+    correct = tf.nn.in_top_k(logits, labels, 5)
     return tf.reduce_sum(tf.cast(correct, tf.int32))

@@ -12,7 +12,6 @@ def load_weights_biases(filepath, optparams=False):
     Returns:
         Returns the dictionary with all the weights and biases for respective layers
     """
-    print 'Loading the pretrained model'
     data = sio.loadmat(filepath)
     weights = {}
     biases = {}
@@ -25,7 +24,6 @@ def load_weights_biases(filepath, optparams=False):
         # weightsMomentum['conv' + str(i + 1)] = data['net']['layers'][0][0][0][idx]['weightsMomentum'][0,0]
         # biasesMomentum['conv' + str(i + 1)] = data['net']['layers'][0][0][0][idx]['biasesMomentum'][0,0].reshape(-1)
     
-    print 'Weights have been loaded'
     return (weights, biases)
 
 # Weights Learning Rate = 1

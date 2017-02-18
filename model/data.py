@@ -101,9 +101,10 @@ class DataLayer:
         # print X[:, 0:225, 31:257, :].shape
         # print X[:, 31:257, 31:257, :].shape
         # print X[:, 16:241, 16:241, :].shape
-        X = np.concatenate((X[:, 0:225, 0:225, :], X[:, 31:257, 0:225, :], X[:, 0:225, 31:257, :], X[:, 31:257, 31:257, :], X[:, 16:241, 16:241, :]), axis=0)
+        X = X[:, 16:241, 16:241, :]
+        # X = np.concatenate((X[:, 0:225, 0:225, :], X[:, 31:257, 0:225, :], X[:, 0:225, 31:257, :], X[:, 31:257, 31:257, :], X[:, 16:241, 16:241, :]), axis=0)
         X = np.concatenate((X, np.fliplr(X)), axis=0)
-        y = np.tile(self.y_dataset[start_idx:end_idx, :].reshape(-1), 10)
+        y = np.tile(self.y_dataset[start_idx:end_idx, :].reshape(-1), 2)
 
         self.test_cursor = end_idx % N
 

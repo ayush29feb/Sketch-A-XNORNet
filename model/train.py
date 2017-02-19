@@ -5,7 +5,7 @@ from pretrain import load_weights_biases
 
 import time
 
-BATCH_SIZE = 52
+BATCH_SIZE = 260
 IMAGE_HEIGHT = 225
 IMAGE_WIDTH = 225
 IMAGE_CHANNELS = 6

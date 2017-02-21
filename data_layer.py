@@ -62,7 +62,9 @@ class DataLayer:
 
         # create an array of indicies to retrieve
         idxs = self.train_idxs[self.train_cursor:self.train_cursor+batch_size]
-        print idxs
+        if self.train_cursor+batch_size >= self.train_idxs.size:
+            idxs = np.append(idxs, self.train_idxs[:(self.train_cursor+batch_size - self.train_idxs.size)])
+
         # retrieve the images and labels
         labels = self.dataset_labels[idxs, :].reshape(-1)
         images_raw = self.dataset_images[idxs, :, :, :].swapaxes(1, 3)
@@ -110,6 +112,8 @@ class DataLayer:
 
          # create an array of indicies to retrieve
         idxs = self.test_idxs[self.test_cursor:self.test_cursor+batch_size]
+        if self.test_cursor+batch_size >= self.test_idxs.size:
+            idxs = np.append(idxs, self.test_idxs[:(self.test_cursor+batch_size - self.test_idxs.size)])
 
         # retrieve the images and labels & apply data augmentation
         labels = np.tile(self.dataset_labels[idxs, :].reshape(-1), 10)

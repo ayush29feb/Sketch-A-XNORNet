@@ -12,7 +12,7 @@ def weight_variable(shape, weights=None):
     Returns:
         tf.Variable with the respectives weights
     """
-    if weights and weights.shape != shape:
+    if weights is not None and weights.shape != shape:
         raise ValueError('The pretrained shapes don\'t match with the layer shapes')
     initial = tf.truncated_normal(shape, stddev=0.1) if weights is None else weights
     return tf.Variable(initial, name='weights')
@@ -33,7 +33,7 @@ def bias_variable(shape, biases=None):
     initial = tf.truncated_normal(shape, stddev=0.1) if biases is None else biases
     return tf.Variable(initial, name='biases')
 
-def inference(images, dropout_prob=1.0, weights=None, biases=None):
+def inference(images, dropout_prob=1.0, pretrained=(None, None)):
     """This prepares the tensorflow graph for the vanilla Sketch-A-Net network
     and returns the tensorflow Op from the last fully connected layer
 
@@ -43,6 +43,8 @@ def inference(images, dropout_prob=1.0, weights=None, biases=None):
     Returns:
         Logits for the softmax loss
     """
+    weights, biases = pretrained
+
     # Layer 1
     with tf.name_scope('L1') as scope:
         weights1 = weight_variable((15, 15, 6, 64), weights['conv1'])

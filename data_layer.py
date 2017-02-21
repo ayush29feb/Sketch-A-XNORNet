@@ -2,6 +2,8 @@ import numpy as np
 import h5py
 from scipy.ndimage.interpolation import rotate
 import scipy.io as sio
+import os.path
+import logging
 
 class DataLayer:
     """
@@ -14,14 +16,16 @@ class DataLayer:
     NUM_ITEMS_PER_CLASS = 80
     NUM_TRAIN_ITEMS_PER_CLASS = 54
     NUM_TEST_ITEMS_PER_CLASS = 26
+    
+    INPUT_SIZE = 256
+    OUTPUT_SIZE = 225
+    NUM_CHANNELS = 6
 
-    def __init__(self, filepath, batch_size=135, input_size=256, output_size=225):
+    def __init__(self, filepath, batch_size=135):
         """
         Initializes the variables and loads the data file
         """
         # initialize the cursors to keep track where we are in the Dataset
-        self.output_size = output_size
-        self.input_size = input_size
         self.train_cursor = 0
         self.test_cursor = 0
         self.batch_size = batch_size
@@ -36,11 +40,18 @@ class DataLayer:
         self.test_idxs = (a_test_ + b_test_ + self.NUM_TRAIN_ITEMS_PER_CLASS).reshape(-1)
 
         # load the .mat file containing the dataset
+        print('Loading the dataset...')
         data = h5py.File(filepath)
         self.dataset_images = data['imdb']['images']['data']
         self.dataset_labels = data['imdb']['images']['labels']
+        print('Dataset loaded!')
 
-    def next_batch_train(self, batch_size=None, output_size=None):
+    def get_images_shape():
+        """Returns the shape of images returned by next_batch_train
+        """
+        return (self.batch_size, self.OUTPUT_SIZE, self.OUTPUT_SIZE, self.NUM_CHANNELS)
+    
+    def next_batch_train(self, batch_size=None):
         """
         Returns the next batch for the training data with the requested batch_size
         or the current default. This function takes care of all the data augmentation
@@ -50,16 +61,15 @@ class DataLayer:
             batch_size: the number of items requested
         
         Returns:
-            images: an ndarray of shape (batch_size, 225, 225, 6)
+            images: an ndarray of shape (batch_size, OUTPUT_SIZE, OUTPUT_SIZE, NUM_CHANNELS)
             labels: an ndarray of shape (batch_size)
         """
 
         # set the batch_size and output_size to class default
         if batch_size is None:
             batch_size = self.batch_size
-        if output_size is None:
-            output_size = self.output_size
-        input_size = self.input_size
+        output_size = self.OUTPUT_SIZE
+        input_size = self.INPUT_SIZE
 
         # create an array of indicies to retrieve
         idxs = self.train_idxs[self.train_cursor:self.train_cursor+batch_size]
@@ -67,6 +77,7 @@ class DataLayer:
             idxs = np.append(idxs, self.train_idxs[:(self.train_cursor+batch_size - self.train_idxs.size)])
 
         # retrieve the images and labels
+        print('Retrieving the next training batch...')
         labels = self.dataset_labels[idxs, :].reshape(-1)
         images_raw = self.dataset_images[idxs, :, :, :].swapaxes(1, 3)
 
@@ -88,9 +99,11 @@ class DataLayer:
         # move the cursors
         self.train_cursor = (self.train_cursor + batch_size) % (self.NUM_TRAIN_ITEMS_PER_CLASS * self.NUM_CLASSES)
 
+        print('Retrieved the next training batch!')
+
         return (255 - images, labels - 1)
 
-    def next_batch_test(self, batch_size=None, output_size=None):
+    def next_batch_test(self, batch_size=None):
         """
         Returns the next batch for the test data with the requested batch_size
         or the current default. This function takes care of all the data augmentation
@@ -100,16 +113,15 @@ class DataLayer:
             batch_size: the number of items requested
         
         Returns:
-            images: an ndarray of shape (batch_size * 10, output_size, output_size, 6)
+            images: an ndarray of shape (batch_size * 10, OUTPUT_SIZE, OUTPUT_SIZE, NUM_CHANNELS)
             labels: an ndarray of shape (batch_size * 10) ranging from [0, 249]
         """
 
         # set the batch_size and output_size to class default
         if batch_size is None:
             batch_size = self.batch_size
-        if output_size is None:
-            output_size = self.output_size
-        input_size = self.input_size
+        output_size = self.OUTPUT_SIZE
+        input_size = self.INPUT_SIZE
 
          # create an array of indicies to retrieve
         idxs = self.test_idxs[self.test_cursor:self.test_cursor+batch_size]
@@ -119,11 +131,13 @@ class DataLayer:
         # retrieve the images and labels & apply data augmentation
         labels = np.tile(self.dataset_labels[idxs, :].reshape(-1), 10)
         images_raw = self.dataset_images[idxs, :, :, :].swapaxes(1, 3)
-        images = np.concatenate((images_raw[:, 0:225, 0:225, :],
-                            images_raw[:, 31:257, 0:225, :],
-                            images_raw[:, 0:225, 31:257, :],
-                            images_raw[:, 31:257, 31:257, :],
-                            images_raw[:, 16:241, 16:241, :]), axis=0)
+        images = np.concatenate((images_raw[:, 0:output_size, 0:output_size, :],
+                            images_raw[:, input_size-output_size:input_size+1, 0:output_size, :],
+                            images_raw[:, 0:output_size, input_size-output_size:input_size+1, :],
+                            images_raw[:, input_size-output_size:input_size+1, input_size-output_size:input_size+1, :],
+                            images_raw[:, (input_size-output_size+1)/2:input_size - (input_size - output_size + 1) / 2 + 1,
+                                        (input_size-output_size+1)/2:input_size - (input_size - output_size + 1) / 2 + 1, :]), 
+                            axis=0)
         images = np.concatenate((images, np.fliplr(images)), axis=0)
 
         # move the cursors
@@ -131,7 +145,7 @@ class DataLayer:
 
         return (255.0 - images, labels - 1)
 
-def load_pretrain_model(filepath):
+def load_pretrained_model(filepath):
     """
     Loads the pretrained weights and biases from the pretrained model available
     on http://www.eecs.qmul.ac.uk/~tmh/downloads.html
@@ -142,6 +156,11 @@ def load_pretrain_model(filepath):
     Returns:
         Returns the dictionary with all the weights and biases for respective layers
     """
+    if not os.path.isfile(filepath):
+        return None, None
+    
+    print('Loading the pretrained model...')
+
     data = sio.loadmat(filepath)
     weights = {}
     biases = {}
@@ -150,4 +169,5 @@ def load_pretrain_model(filepath):
         weights['conv' + str(i + 1)] = data['net']['layers'][0][0][0][idx]['filters'][0][0]
         biases['conv' + str(i + 1)] = data['net']['layers'][0][0][0][idx]['biases'][0][0].reshape(-1)
     
+    print('Pretrained model loaded!')
     return (weights, biases)

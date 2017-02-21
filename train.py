@@ -58,12 +58,16 @@ def run_training():
         # Create a session for running the Ops on the graph
         sess = tf.Session()
 
+        # create a summary writer
+        summary_writter = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
+
         ############### Start Running the Ops ###############
         # Run the Op to initialize variables
         sess.run(init)
 
         # the training loop
         max_steps = (int) (FLAGS.epoch * DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size)
+        epoch_size = DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size
         for step in xrange(max_steps):
             start_time = time.time()
             
@@ -78,7 +82,7 @@ def run_training():
                 print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
             
             # save and evalutae the model every 10 epochs
-            if (step + 1) % (10 * DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size) == 0:
+            if (step + 1) % (10 * epoch_size) == 0:
                 checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=step)
 

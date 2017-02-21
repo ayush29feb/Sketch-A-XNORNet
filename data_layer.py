@@ -1,5 +1,7 @@
 import numpy as np
 import h5py
+from scipy.ndimage.interpolation import rotate
+
 class DataLayer:
     """
     This is an abstraction of the data layer for the Sketch-A-Net Dataset.
@@ -17,25 +19,27 @@ class DataLayer:
         Initializes the variables and loads the data file
         """
         # initialize the cursors to keep track where we are in the Dataset
+        self.output_size = output_size
+        self.input_size = input_size
         self.train_cursor = 0
         self.test_cursor = 0
         self.batch_size = batch_size
 
         # initialize the idx arrays
-        a_train_ = np.tile(np.arange(NUM_TRAIN_ITEMS_PER_CLASS), NUM_CLASSES).reshape(NUM_CLASSES, NUM_TRAIN_ITEMS_PER_CLASS)
-        b_train_ = np.tile(np.arange(NUM_CLASSES) * NUM_ITEMS_PER_CLASS, NUM_TRAIN_ITEMS_PER_CLASS).reshape(NUM_TRAIN_ITEMS_PER_CLASS, NUM_CLASSES).T
+        a_train_ = np.tile(np.arange(self.NUM_TRAIN_ITEMS_PER_CLASS), self.NUM_CLASSES).reshape(self.NUM_CLASSES, self.NUM_TRAIN_ITEMS_PER_CLASS)
+        b_train_ = np.tile(np.arange(self.NUM_CLASSES) * self.NUM_ITEMS_PER_CLASS, self.NUM_TRAIN_ITEMS_PER_CLASS).reshape(self.NUM_TRAIN_ITEMS_PER_CLASS, self.NUM_CLASSES).T
         self.train_idxs = (a_train_ + b_train_).reshape(-1)
 
-        a_test_ = np.tile(np.arange(NUM_TEST_ITEMS_PER_CLASS), NUM_CLASSES).reshape(NUM_CLASSES, NUM_TEST_ITEMS_PER_CLASS)
-        b_test_ = np.tile(np.arange(NUM_CLASSES) * NUM_ITEMS_PER_CLASS, NUM_TEST_ITEMS_PER_CLASS).reshape(NUM_TEST_ITEMS_PER_CLASS, NUM_CLASSES).T
-        self.test_idxs = (a_test_ + b_test_ + NUM_TRAIN_ITEMS_PER_CLASS).reshape(-1)
+        a_test_ = np.tile(np.arange(self.NUM_TEST_ITEMS_PER_CLASS), self.NUM_CLASSES).reshape(self.NUM_CLASSES, self.NUM_TEST_ITEMS_PER_CLASS)
+        b_test_ = np.tile(np.arange(self.NUM_CLASSES) * self.NUM_ITEMS_PER_CLASS, self.NUM_TEST_ITEMS_PER_CLASS).reshape(self.NUM_TEST_ITEMS_PER_CLASS, self.NUM_CLASSES).T
+        self.test_idxs = (a_test_ + b_test_ + self.NUM_TRAIN_ITEMS_PER_CLASS).reshape(-1)
 
         # load the .mat file containing the dataset
         data = h5py.File(filepath)
         self.dataset_images = data['imdb']['images']['data']
-        self.dataset_labels = data['imdb']['images']['data']
+        self.dataset_labels = data['imdb']['images']['labels']
 
-    def next_batch_train(batch_size=None, output_size=None):
+    def next_batch_train(self, batch_size=None, output_size=None):
         """
         Returns the next batch for the training data with the requested batch_size
         or the current default. This function takes care of all the data augmentation
@@ -57,14 +61,14 @@ class DataLayer:
         input_size = self.input_size
 
         # create an array of indicies to retrieve
-        idxs = np.arange(self.batch_size)
-
+        idxs = self.train_idxs[self.train_cursor:self.train_cursor+batch_size]
+        print idxs
         # retrieve the images and labels
-        labels = self.dataset_labels[idxs, :, :, :].reshape(-1)
+        labels = self.dataset_labels[idxs, :].reshape(-1)
         images_raw = self.dataset_images[idxs, :, :, :].swapaxes(1, 3)
 
         # apply data augmentation
-        images = np.zeros((batch_size, output_size, output_size, images_raw[3]))
+        images = np.zeros((batch_size, output_size, output_size, images_raw.shape[3]))
         x = np.random.randint(input_size - output_size, size=batch_size)
         y = np.random.randint(input_size - output_size, size=batch_size)
         flip = np.random.rand(batch_size) > 0.45
@@ -72,18 +76,18 @@ class DataLayer:
 
         # TODO: vectorize data augmentation
         for i in xrange(batch_size):
-            images[i, :, :, :] = images_raw[i, x:x+output_size, y:y+output_size, :]
+            images[i, :, :, :] = images_raw[i, x[i]:x[i]+output_size, y[i]:y[i]+output_size, :]
             if flip[i]:
                 images[i, :, :, :] = np.fliplr(images[i, :, :, :])
             if degs[i] != 0:
                 images[i, :, :, :] = rotate(images[i, :, :, :], degs[i], cval=255.0, reshape=False)
 
         # move the cursors
-        self.train_cursor = (self.train_cursor + batch_size) % (NUM_TRAIN_ITEMS_PER_CLASS * NUM_CLASSES)
+        self.train_cursor = (self.train_cursor + batch_size) % (self.NUM_TRAIN_ITEMS_PER_CLASS * self.NUM_CLASSES)
 
         return (255 - images, labels - 1)
 
-    def next_batch_test(batch_size=None, output_size=None):
+    def next_batch_test(self, batch_size=None, output_size=None):
         """
         Returns the next batch for the test data with the requested batch_size
         or the current default. This function takes care of all the data augmentation
@@ -108,7 +112,7 @@ class DataLayer:
         idxs = self.test_idxs[self.test_cursor:self.test_cursor+batch_size]
 
         # retrieve the images and labels & apply data augmentation
-        labels = np.tile(self.dataset_labels[idxs, :, :, :].reshape(-1), 10)
+        labels = np.tile(self.dataset_labels[idxs, :].reshape(-1), 10)
         images_raw = self.dataset_images[idxs, :, :, :].swapaxes(1, 3)
         images = np.concatenate((images_raw[:, 0:225, 0:225, :],
                             images_raw[:, 31:257, 0:225, :],
@@ -118,6 +122,6 @@ class DataLayer:
         images = np.concatenate((images, np.fliplr(images)), axis=0)
 
         # move the cursors
-        self.test_cursor = (self.test_cursor + batch_size) % (NUM_TEST_ITEMS_PER_CLASS * NUM_CLASSES)
+        self.test_cursor = (self.test_cursor + batch_size) % (self.NUM_TEST_ITEMS_PER_CLASS * self.NUM_CLASSES)
 
         return (255.0 - images, labels - 1)

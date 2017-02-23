@@ -33,10 +33,13 @@ def do_eval(sess,
     true_count = 0
     for step in xrange(steps_per_epoch):
         images, labels = dataset.next_batch_test() if is_val else dataset.next_batch_train()
-        true_count += sess.run(eval_correct, feed_dict={
+        count = sess.run(eval_correct, feed_dict={
             images_placeholder: images, 
             labels_placeholder: labels, 
             validation_set_placeholder: is_val})
+        true_count += count
+        print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %
+        (dataset.batch_size, count, float(count) / dataset.batch_size))
     precision = float(true_count) / num_examples
     print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %
         (num_examples, true_count, precision))

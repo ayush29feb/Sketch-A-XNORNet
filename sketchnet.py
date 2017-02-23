@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from data_layer import DataLayer
 
 def weight_variable(shape, weights=None):
     """Initializes the weights variable for a required layer using the
@@ -147,8 +148,7 @@ def evaluation(logits, labels, validation):
     Return:
         Returns the number of correct predictions
     """
-    y_ = tf.argmax(logits, axis=1)
     if tf.assert_equal(validation, tf.constant(True)):
-        y_ = tf.reduce_max(tf.reshape(y_, [10, -1]), axis=0)
-    correct = tf.equal(tf.cast(y_, tf.float32), labels[:tf.size(y_)])
+        logits = tf.reduce_sum(tf.reshape(logits, [10, -1, 250]), axis=0)
+    correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), 1)
     return tf.reduce_sum(tf.cast(correct, tf.int32))

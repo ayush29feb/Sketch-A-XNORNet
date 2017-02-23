@@ -28,21 +28,25 @@ def do_eval(sess,
             dataset,
             is_val=True):
     
-    num_examples = DataLayer.NUM_ITEMS_PER_CLASS * DataLayer.NUM_CLASSES
+    num_examples = (DataLayer.NUM_TEST_ITEMS_PER_CLASS if is_val else DataLayer.NUM_TRAIN_ITEMS_PER_CLASS) * DataLayer.NUM_CLASSES
     steps_per_epoch = num_examples // dataset.batch_size
     true_count = 0
+    total_duration = 0
     for step in xrange(steps_per_epoch):
+        start_time = time.time()
         images, labels = dataset.next_batch_test() if is_val else dataset.next_batch_train()
         count = sess.run(eval_correct, feed_dict={
             images_placeholder: images, 
             labels_placeholder: labels, 
             validation_set_placeholder: is_val})
         true_count += count
-        print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %
-        (dataset.batch_size, count, float(count) / dataset.batch_size))
+        duration = time.time() - start_time
+        total_duration += duration
+        print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
+        (dataset.batch_size, count, float(count) / dataset.batch_size, duration))
     precision = float(true_count) / num_examples
-    print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %
-        (num_examples, true_count, precision))
+    print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
+        (num_examples, true_count, precision, total_duration))
 
 def run_training():
     """Trains and evaluates the Sketch-A-Net network
@@ -93,43 +97,52 @@ def run_training():
         sess.run(init)
 
         # the training loop
-        max_steps = (int) (FLAGS.epoch * DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size)
-        epoch_size = DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size
-        for step in xrange(max_steps):
-            start_time = time.time()
-            
-            # fill the feed_dict and evalute the loss and train_op
-            images, labels = dataset.next_batch_train()
-            _, loss_value = sess.run([train_op, loss], feed_dict={images_placeholder: images, labels_placeholder: labels})
-            
-            duration = time.time() - start_time
+        if not FLAGS.eval_only:
+            max_steps = (int) (FLAGS.epoch * DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size)
+            epoch_size = DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size
+            for step in xrange(max_steps):
+                start_time = time.time()
+                
+                # fill the feed_dict and evalute the loss and train_op
+                images, labels = dataset.next_batch_train()
+                _, loss_value = sess.run([train_op, loss], feed_dict={images_placeholder: images, labels_placeholder: labels})
+                
+                duration = time.time() - start_time
 
-            # print the status every 10 steps
-            if step % 10 == 0:
-                print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
-            
-            # save and evalutae the model every 10 epochs
-            if step % (10 * epoch_size) == 0:
-                checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
-                saver.save(sess, checkpoint_file, global_step=step)
+                # print the status every 10 steps
+                if step % 10 == 0:
+                    print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
                 
-                # Do evaluation of the validation set
-                do_eval(sess, 
-                        eval_correct, 
-                        images_placeholder,
-                        labels_placeholder,
-                        is_val_placeholder,
-                        dataset,
-                        is_val=True)
-                
-                # Do evaluation of the training set
-                do_eval(sess, 
-                        eval_correct, 
-                        images_placeholder,
-                        labels_placeholder,
-                        is_val_placeholder,
-                        dataset,
-                        is_val=False)
+                # save and evalutae the model every 10 epochs
+                if step % (10 * epoch_size) == 0:
+                    checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
+                    saver.save(sess, checkpoint_file, global_step=step)
+                    
+                    # Do evaluation of the validation set
+                    do_eval(sess, 
+                            eval_correct, 
+                            images_placeholder,
+                            labels_placeholder,
+                            is_val_placeholder,
+                            dataset,
+                            is_val=True)
+                    
+                    # Do evaluation of the training set
+                    do_eval(sess, 
+                            eval_correct, 
+                            images_placeholder,
+                            labels_placeholder,
+                            is_val_placeholder,
+                            dataset,
+                            is_val=False)
+        # Final Evaluation
+        do_eval(sess, 
+                eval_correct, 
+                images_placeholder,
+                labels_placeholder,
+                is_val_placeholder,
+                dataset,
+                is_val=True)
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
@@ -191,6 +204,11 @@ if __name__ == '__main__':
         '--ckpt_dir',
         type=str,
         default='/tmp/tensorflow/sketch-a-net/logs/ckpts'
+    )
+    parser.add_argument(
+        '--eval_only',
+        type=bool,
+        default=False
     )
 
     FLAGS, unparsed = parser.parse_known_args()

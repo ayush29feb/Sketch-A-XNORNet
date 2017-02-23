@@ -19,8 +19,7 @@ I will be using [Tensorflow] as the primary library for this project. However, t
 ## Milestone
 The following tasks should be completed by the milestone on 02/24/2017.
 - [ ] XNOR Convolution Ops in Tensorflow
-- [ ] A simple 2 layer network on MNIST dataset to test XNOR Convolutions Ops
-- [ ] Implement the Sketch-A-Net architecture in Tensorflow
+- [x] Implement the Sketch-A-Net architecture in Tensorflow
 
 ## References
 - [Sketch-A-Net]: "Sketch-a-Net that Beats Humans"

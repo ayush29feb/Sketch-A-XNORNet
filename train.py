@@ -20,6 +20,27 @@ import sketchnet as sn
 
 FLAGS = None
 
+def do_eval(sess, 
+            eval_correct, 
+            images_placeholder,
+            labels_placeholder,
+            validation_set_placeholder,
+            dataset,
+            is_val=True):
+    
+    num_examples = DataLayer.NUM_ITEMS_PER_CLASS * DataLayer.NUM_CLASSES
+    steps_per_epoch = num_examples // dataset.batch_size
+    true_count = 0
+    for step in xrange(steps_per_epoch):
+        images, labels = dataset.next_batch_test() if is_val else dataset.next_batch_train()
+        true_count += sess.run(eval_correct, feed_dict={
+            images_placeholder: images, 
+            labels_placeholder: labels, 
+            validation_set_placeholder: is_val})
+    precision = float(true_count) / num_examples
+    print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %
+        (num_examples, true_count, precision))
+
 def run_training():
     """Trains and evaluates the Sketch-A-Net network
     """
@@ -38,6 +59,7 @@ def run_training():
 
         dropout_rate_placeholder = tf.placeholder_with_default(FLAGS.dropout_rate, shape=(), name='learning_rate_pl')
         learning_rate_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, shape=(), name='learning_rate_pl')
+        is_val_placeholder = tf.placeholder(tf.bool, shape=(), name='is_val_pl')
 
         ############### Declare all the Ops for the graph ###############
         # Build a graph that computes predictions from the inference model
@@ -48,6 +70,8 @@ def run_training():
 
         # Add the Op to calculate and apply gradient to the graph
         train_op = sn.training(loss, learning_rate_placeholder)
+
+        eval_correct = sn.evaluation(logits, labels_placeholder, is_val_placeholder)
 
         # Add the variable initializer Op to the graph
         init = tf.global_variables_initializer()
@@ -82,15 +106,35 @@ def run_training():
                 print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
             
             # save and evalutae the model every 10 epochs
-            if (step + 1) % (10 * epoch_size) == 0:
+            if step % (10 * epoch_size) == 0:
                 checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
                 saver.save(sess, checkpoint_file, global_step=step)
-
+                
+                # Do evaluation of the validation set
+                do_eval(sess, 
+                        eval_correct, 
+                        images_placeholder,
+                        labels_placeholder,
+                        is_val_placeholder,
+                        dataset,
+                        is_val=True)
+                
+                # Do evaluation of the training set
+                do_eval(sess, 
+                        eval_correct, 
+                        images_placeholder,
+                        labels_placeholder,
+                        is_val_placeholder,
+                        dataset,
+                        is_val=False)
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
+    if tf.gfile.Exists(FLAGS.ckpt_dir):
+        tf.gfile.DeleteRecursively(FLAGS.ckpt_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
+    tf.gfile.MakeDirs(FLAGS.ckpt_dir)
     if not tf.gfile.Exists(FLAGS.data_path):
         raise IOError('The file at' + FLAGS.data_path + ' does not exsits.')
     print('Starting the training...')

@@ -137,7 +137,7 @@ def training(loss, learning_rate=0.001):
     train_op = optimizer.minimize(loss, global_step=global_step)
     return train_op
 
-def evaluation(logits, labels):
+def evaluation(logits, labels, validation):
     """Evaluates the number of correct predictions for the given logits and labels
 
     Args:
@@ -148,5 +148,7 @@ def evaluation(logits, labels):
         Returns the number of correct predictions
     """
     y_ = tf.argmax(logits, axis=1)
-    correct = tf.nn.in_top_k(logits, labels, 5)
+    if tf.assert_equal(validation, tf.constant(True)):
+        y_ = tf.reduce_max(tf.reshape(y_, [10, -1]), axis=0)
+    correct = tf.equal(tf.cast(y_, tf.float32), labels[:tf.size(y_)])
     return tf.reduce_sum(tf.cast(correct, tf.int32))

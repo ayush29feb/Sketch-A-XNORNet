@@ -62,7 +62,7 @@ def run_training():
         images_placeholder = tf.placeholder(tf.float32, name='images_pl')       
         labels_placeholder = tf.placeholder(tf.float32, name='labels_pl')
 
-        dropout_rate_placeholder = tf.placeholder_with_default(FLAGS.dropout_rate, shape=(), name='learning_rate_pl')
+        dropout_rate_placeholder = tf.placeholder_with_default(1.0, shape=(), name='learning_rate_pl')
         learning_rate_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, shape=(), name='learning_rate_pl')
 
         ############### Declare all the Ops for the graph ###############
@@ -110,7 +110,12 @@ def run_training():
                     
                     # fill the feed_dict and evalute the loss and train_op
                     images, labels = dataset.next_batch_train()
-                    feed_dict = { images_placeholder: images, labels_placeholder: labels }
+                    feed_dict = {
+                        images_placeholder: images,
+                        labels_placeholder: labels,
+                        dropout_rate_placeholder: FLAGS.dropout_rate,
+                        learning_rate_placeholder: FLAGS.learning_rate
+                    }
                     _, loss_value, summary_str = sess.run([train_op, loss, summary_merged], feed_dict=feed_dict)
                     
                     duration = time.time() - start_time

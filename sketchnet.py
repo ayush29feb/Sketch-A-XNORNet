@@ -34,6 +34,20 @@ def bias_variable(shape, biases=None):
     initial = tf.truncated_normal(shape, stddev=0.1) if biases is None else biases
     return tf.Variable(initial, name='biases')
 
+def _activation_summary(x):
+  """Helper to create summaries for activations.
+  Creates a summary that provides a histogram of activations.
+  Creates a summary that measures the sparsity of activations.
+  Args:
+    x: Tensor
+  Returns:
+    nothing
+  """
+  tensor_name = x.op.name
+  tf.summary.histogram(tensor_name + '/activations', x)
+  tf.summary.scalar(tensor_name + '/sparsity',
+                                       tf.nn.zero_fraction(x))
+
 def inference(images, dropout_prob=1.0, pretrained=(None, None)):
     """This prepares the tensorflow graph for the vanilla Sketch-A-Net network
     and returns the tensorflow Op from the last fully connected layer
@@ -53,6 +67,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         conv1 = tf.nn.conv2d(images, weights1, [1, 3, 3, 1], padding='VALID', name='conv1')
         relu1 = tf.nn.relu(tf.nn.bias_add(conv1, biases1), name='relu1')
         pool1 = tf.nn.max_pool(relu1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool1')
+        _activation_summary(pool1)
 
     # Layer 2
     with tf.name_scope('L2') as scope:
@@ -61,6 +76,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         conv2 = tf.nn.conv2d(pool1, weights2, [1, 1, 1, 1], padding='VALID', name='conv2')
         relu2 = tf.nn.relu(tf.nn.bias_add(conv2, biases2), name='relu2')
         pool2 = tf.nn.max_pool(relu2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
+        _activation_summary(pool2)
 
     # Layer 3
     with tf.name_scope('L3') as scope:
@@ -68,6 +84,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         biases3 = bias_variable((256,), biases['conv3'])
         conv3 = tf.nn.conv2d(pool2, weights3, [1, 1, 1, 1], padding='SAME', name='conv3')
         relu3 = tf.nn.relu(tf.nn.bias_add(conv3, biases3), name='relu3')
+        _activation_summary(relu3)
 
     # Layer 4
     with tf.name_scope('L4') as scope:
@@ -75,6 +92,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         biases4 = bias_variable((256,), biases['conv4'])
         conv4 = tf.nn.conv2d(relu3, weights4, [1, 1, 1, 1], padding='SAME', name='conv4')
         relu4 = tf.nn.relu(tf.nn.bias_add(conv4, biases4), name='relu4')
+        _activation_summary(relu4)
 
     # Layer 5
     with tf.name_scope('L5') as scope:
@@ -83,6 +101,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         conv5 = tf.nn.conv2d(relu4, weights5, [1, 1, 1, 1], padding='SAME', name='conv5')
         relu5 = tf.nn.relu(tf.nn.bias_add(conv5, biases5), name='relu5')
         pool5 = tf.nn.max_pool(relu5, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool5')
+        _activation_summary(pool5)
 
     # Layer 6
     with tf.name_scope('L6') as scope:
@@ -91,6 +110,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         fc6 = tf.nn.conv2d(pool5, weights6, [1, 1, 1, 1], padding='VALID', name='fc6')
         relu6 = tf.nn.relu(tf.nn.bias_add(fc6, biases6), name='relu6')
         dropout6 = tf.nn.dropout(relu6, keep_prob=dropout_prob, name='dropout6')
+        _activation_summary(dropout6)
 
     # Layer 7
     with tf.name_scope('L7') as scope:
@@ -99,14 +119,17 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         fc7 = tf.nn.conv2d(dropout6, weights7, [1, 1, 1, 1], padding='VALID', name='fc7')
         relu7 = tf.nn.relu(tf.nn.bias_add(fc7, biases7), name='relu7')
         dropout7 = tf.nn.dropout(relu7, keep_prob=dropout_prob, name='dropout7')
+        _activation_summary(dropout7)
 
     # Layer 8
     with tf.name_scope('L8') as scope:
         weights8 = weight_variable((1, 1, 512, 250), weights['conv8'])
         biases8 = bias_variable((250,), biases['conv8'])
         fc8 = tf.nn.conv2d(dropout7, weights8, [1, 1, 1, 1], padding='VALID', name='fc8')
+        _activation_summary(fc8)
 
     logits = tf.reshape(fc8, [-1, 250])
+    
     return logits
 
 def loss(logits, labels):
@@ -122,13 +145,15 @@ def loss(logits, labels):
     labels = tf.to_int64(labels)
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
       labels=labels, logits=logits, name='xentropy')
-    return tf.reduce_mean(cross_entropy, name='xentropy_mean')
+    xentropy_mean = tf.reduce_mean(cross_entropy, name='xentropy_mean')
+    tf.summary.scalar('loss', xentropy_mean)
+    return xentropy_mean
 
-def training(loss, learning_rate=0.001):
+def training(loss, learning_rate):
     """Returns the training Op for the loss function using the AdamOptimizer
 
     Args:
-        learning_rate: the initial learning_rate
+        learning_rate: the initial learning_rate Tensor
 
     Returns:
         train_op: the tensorflow's trainig Op
@@ -136,6 +161,7 @@ def training(loss, learning_rate=0.001):
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     global_step = tf.Variable(0, name='global_step', trainable=False)
     train_op = optimizer.minimize(loss, global_step=global_step)
+    tf.summary.scalar('global step', global_step)
     return train_op
 
 def evaluation(logits, labels, validation):
@@ -148,7 +174,7 @@ def evaluation(logits, labels, validation):
     Return:
         Returns the number of correct predictions
     """
-    if tf.assert_equal(validation, tf.constant(True)):
+    if validation:
         logits = tf.reduce_sum(tf.reshape(logits, [10, -1, 250]), axis=0)
     correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), 1)
     return tf.reduce_sum(tf.cast(correct, tf.int32))

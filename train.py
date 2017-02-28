@@ -24,9 +24,8 @@ def do_eval(sess,
             eval_correct, 
             images_placeholder,
             labels_placeholder,
-            validation_set_placeholder,
             dataset,
-            is_val=True):
+            is_val):
     
     num_examples = (DataLayer.NUM_TEST_ITEMS_PER_CLASS if is_val else DataLayer.NUM_TRAIN_ITEMS_PER_CLASS) * DataLayer.NUM_CLASSES
     steps_per_epoch = num_examples // dataset.batch_size
@@ -37,13 +36,12 @@ def do_eval(sess,
         images, labels = dataset.next_batch_test() if is_val else dataset.next_batch_train()
         count = sess.run(eval_correct, feed_dict={
             images_placeholder: images, 
-            labels_placeholder: labels, 
-            validation_set_placeholder: is_val})
+            labels_placeholder: labels})
         true_count += count
         duration = time.time() - start_time
-        total_duration += duration
-        print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
-        (dataset.batch_size, count, float(count) / dataset.batch_size, duration))
+        total_duration += duration    
+        # print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
+        # (dataset.batch_size, count, float(count) / dataset.batch_size, duration))
     precision = float(true_count) / num_examples
     print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
         (num_examples, true_count, precision, total_duration))
@@ -66,7 +64,6 @@ def run_training():
 
         dropout_rate_placeholder = tf.placeholder_with_default(FLAGS.dropout_rate, shape=(), name='learning_rate_pl')
         learning_rate_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, shape=(), name='learning_rate_pl')
-        is_val_placeholder = tf.placeholder(tf.bool, shape=(), name='is_val_pl')
 
         ############### Declare all the Ops for the graph ###############
         # Build a graph that computes predictions from the inference model
@@ -78,7 +75,9 @@ def run_training():
         # Add the Op to calculate and apply gradient to the graph
         train_op = sn.training(loss, learning_rate_placeholder)
 
-        eval_correct = sn.evaluation(logits, labels_placeholder, is_val_placeholder)
+        # Evaluation
+        eval_correct_train = sn.evaluation(logits, labels_placeholder, False)
+        eval_correct_test = sn.evaluation(logits, labels_placeholder, True)
 
         # Add the variable initializer Op to the graph
         init = tf.global_variables_initializer()
@@ -87,70 +86,78 @@ def run_training():
         saver = tf.train.Saver()
 
         # Create a session for running the Ops on the graph
-        sess = tf.Session()
+        with tf.Session() as sess:
+            # Restore the variables
+            latest_ckpt_file = tf.train.latest_checkpoint(FLAGS.ckpt_dir)
+            if latest_ckpt_file is not None:
+                saver.restore(sess, latest_ckpt_file)
+                print('Model Restored')
 
-        # create a summary writer
-        summary_writter = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
+            # create a summary writer
+            summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
+            summary_merged = tf.summary.merge_all()
 
-        ############### Start Running the Ops ###############
-        # Run the Op to initialize variables
-        sess.run(init)
+            ############### Start Running the Ops ###############
+            # Run the Op to initialize variables
+            sess.run(init)
 
-        # the training loop
-        if not FLAGS.eval_only:
-            max_steps = (int) (FLAGS.epoch * DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size)
-            epoch_size = DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size
-            for step in xrange(max_steps):
-                start_time = time.time()
-                
-                # fill the feed_dict and evalute the loss and train_op
-                images, labels = dataset.next_batch_train()
-                _, loss_value = sess.run([train_op, loss], feed_dict={images_placeholder: images, labels_placeholder: labels})
-                
-                duration = time.time() - start_time
-
-                # print the status every 10 steps
-                if step % 10 == 0:
-                    print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
-                
-                # save and evalutae the model every 10 epochs
-                if step % (10 * epoch_size) == 0:
-                    checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
-                    saver.save(sess, checkpoint_file, global_step=step)
+            # the training loop
+            if not FLAGS.eval_only:
+                max_steps = (int) (FLAGS.epoch * DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size)
+                epoch_size = DataLayer.NUM_CLASSES * DataLayer.NUM_TRAIN_ITEMS_PER_CLASS / FLAGS.batch_size
+                for step in xrange(max_steps):
+                    start_time = time.time()
                     
-                    # Do evaluation of the validation set
-                    do_eval(sess, 
-                            eval_correct, 
-                            images_placeholder,
-                            labels_placeholder,
-                            is_val_placeholder,
-                            dataset,
-                            is_val=True)
+                    # fill the feed_dict and evalute the loss and train_op
+                    images, labels = dataset.next_batch_train()
+                    feed_dict = { images_placeholder: images, labels_placeholder: labels }
+                    _, loss_value, summary_str = sess.run([train_op, loss, summary_merged], feed_dict=feed_dict)
                     
-                    # Do evaluation of the training set
-                    do_eval(sess, 
-                            eval_correct, 
-                            images_placeholder,
-                            labels_placeholder,
-                            is_val_placeholder,
-                            dataset,
-                            is_val=False)
-        # Final Evaluation
-        do_eval(sess, 
-                eval_correct, 
-                images_placeholder,
-                labels_placeholder,
-                is_val_placeholder,
-                dataset,
-                is_val=True)
+                    duration = time.time() - start_time
+
+                    # save and print the status every 10 steps
+                    if step % 5 == 0:
+                        summary_writer.add_summary(summary_str, step)
+
+                        print('Saving Checkpoint...')
+                        checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
+                        saver.save(sess, checkpoint_file, global_step=step)
+                        print('Checkpoint Saved!')
+
+                        print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+
+                    # evalutae the model every 10 epochs
+                    if (step + 1) % (10 * epoch_size) == 0:
+                        # Do evaluation of the validation set
+                        do_eval(sess, 
+                                eval_correct_test, 
+                                images_placeholder,
+                                labels_placeholder,
+                                dataset,
+                                is_val=True)
+                        
+                        # Do evaluation of the training set
+                        do_eval(sess, 
+                                eval_correct_train, 
+                                images_placeholder,
+                                labels_placeholder,
+                                dataset,
+                                is_val=False)
+            # Final Evaluation
+            do_eval(sess, 
+                    eval_correct_test, 
+                    images_placeholder,
+                    labels_placeholder,
+                    dataset,
+                    is_val=True)
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
         tf.gfile.DeleteRecursively(FLAGS.log_dir)
-    if tf.gfile.Exists(FLAGS.ckpt_dir):
-        tf.gfile.DeleteRecursively(FLAGS.ckpt_dir)
+    if not tf.gfile.Exists(FLAGS.ckpt_dir):
+        tf.gfile.MakeDirs(FLAGS.ckpt_dir)
     tf.gfile.MakeDirs(FLAGS.log_dir)
-    tf.gfile.MakeDirs(FLAGS.ckpt_dir)
+    
     if not tf.gfile.Exists(FLAGS.data_path):
         raise IOError('The file at' + FLAGS.data_path + ' does not exsits.')
     print('Starting the training...')

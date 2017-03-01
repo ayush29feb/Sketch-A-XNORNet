@@ -29,6 +29,8 @@ def do_eval(sess,
     
     num_examples = (DataLayer.NUM_TEST_ITEMS_PER_CLASS if is_val else DataLayer.NUM_TRAIN_ITEMS_PER_CLASS) * DataLayer.NUM_CLASSES
     steps_per_epoch = num_examples // dataset.batch_size
+    if is_val:
+        steps_per_epoch *= 10
     true_count = 0
     total_duration = 0
     for step in xrange(steps_per_epoch):
@@ -39,9 +41,8 @@ def do_eval(sess,
             labels_placeholder: labels})
         true_count += count
         duration = time.time() - start_time
-        total_duration += duration    
-        # print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
-        # (dataset.batch_size, count, float(count) / dataset.batch_size, duration))
+        total_duration += duration 
+        # print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' % (dataset.batch_size, count, float(count) / dataset.batch_size, duration))
     precision = float(true_count) / num_examples
     print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
         (num_examples, true_count, precision, total_duration))
@@ -53,7 +54,7 @@ def run_training():
     dataset = DataLayer(FLAGS.data_path, batch_size=FLAGS.batch_size)
     
     # Load the pretrained models
-    pretrained = load_pretrained_model(FLAGS.pretrain_path)
+    pretrained = load_pretrained_model(FLAGS.pretrain_path) if FLAGS.pretrain else None
 
     # Tell tensorflow that the model will be built into the default graph
     with tf.Graph().as_default():
@@ -222,6 +223,11 @@ if __name__ == '__main__':
         '--eval_only',
         type=bool,
         default=False
+    )
+    parser.add_argument(
+        '--pretrain',
+        type=bool,
+        default=True
     )
 
     FLAGS, unparsed = parser.parse_known_args()

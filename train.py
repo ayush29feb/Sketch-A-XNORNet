@@ -86,7 +86,7 @@ def run_training():
         saver = tf.train.Saver()
 
         # Create a session for running the Ops on the graph
-        with tf.Session() as sess:
+        with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
             # Restore the variables
             latest_ckpt_file = tf.train.latest_checkpoint(FLAGS.ckpt_dir)
             if latest_ckpt_file is not None:
@@ -120,15 +120,16 @@ def run_training():
                     
                     duration = time.time() - start_time
 
-                    # save and print the status every 10 steps
-                    if step % 5 == 0:
-                        summary_writer.add_summary(summary_str, step)
-
+                    # save every 100 steps
+                    if step % 100 == 0:
                         print('Saving Checkpoint...')
                         checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
                         saver.save(sess, checkpoint_file, global_step=step)
                         print('Checkpoint Saved!')
 
+                    # print the status every 10 steps
+                    if step % 10 == 0:
+                        summary_writer.add_summary(summary_str, step)
                         print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
 
                     # evalutae the model every 10 epochs

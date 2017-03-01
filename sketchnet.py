@@ -158,7 +158,7 @@ def training(loss, learning_rate):
     Returns:
         train_op: the tensorflow's trainig Op
     """
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.5)
     global_step = tf.Variable(0, name='global_step', trainable=False)
     train_op = optimizer.minimize(loss, global_step=global_step)
     tf.summary.scalar('global step', global_step)

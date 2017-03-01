@@ -154,8 +154,7 @@ def load_pretrained_model(filepath):
     Returns:
         Returns the dictionary with all the weights and biases for respective layers
     """
-    if not os.path.isfile(filepath):
-        return None, None
+    allNone = filepath is None or not os.path.isfile(filepath)
     
     print('Loading the pretrained model...')
 
@@ -164,8 +163,8 @@ def load_pretrained_model(filepath):
     biases = {}
     conv_idxs = [0, 3, 6, 8, 10, 13, 16, 19]
     for i, idx in enumerate(conv_idxs):
-        weights['conv' + str(i + 1)] = data['net']['layers'][0][0][0][idx]['filters'][0][0]
-        biases['conv' + str(i + 1)] = data['net']['layers'][0][0][0][idx]['biases'][0][0].reshape(-1)
+        weights['conv' + str(i + 1)] = None if allNone else data['net']['layers'][0][0][0][idx]['filters'][0][0]
+        biases['conv' + str(i + 1)] = None if allNone else data['net']['layers'][0][0][0][idx]['biases'][0][0].reshape(-1)
     
-    print('Pretrained model loaded!')
+    print('Pretrain Model Not Available' if allNone else 'Pretrained model loaded!')
     return (weights, biases)

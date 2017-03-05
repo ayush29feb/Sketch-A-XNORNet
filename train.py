@@ -64,7 +64,7 @@ def run_training():
         labels_placeholder = tf.placeholder(tf.float32, name='labels_pl')
 
         dropout_rate_placeholder = tf.placeholder_with_default(1.0, shape=(), name='learning_rate_pl')
-        learning_rate_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, shape=(), name='learning_rate_pl')
+        learning_rate_placeholder = tf.placeholder_with_default(FLAGS.lr, shape=(), name='learning_rate_pl')
 
         ############### Declare all the Ops for the graph ###############
         # Build a graph that computes predictions from the inference model
@@ -114,8 +114,8 @@ def run_training():
                     feed_dict = {
                         images_placeholder: images,
                         labels_placeholder: labels,
-                        dropout_rate_placeholder: FLAGS.dropout_rate,
-                        learning_rate_placeholder: FLAGS.learning_rate
+                        dropout_rate_placeholder: FLAGS.dr,
+                        learning_rate_placeholder: FLAGS.lr
                     }
                     _, loss_value, summary_str = sess.run([train_op, loss, summary_merged], feed_dict=feed_dict)
                     
@@ -179,13 +179,13 @@ if __name__ == '__main__':
         help='Directory to save the logs'
     )
     parser.add_argument(
-        '--learning_rate',
+        '--lr',
         type=float,
         default=0.001,
         help='The initial learning rate for the optimizer'
     )
     parser.add_argument(
-        '--dropout_rate',
+        '--dr',
         type=float,
         default=0.5,
         help='The probability to keep a neuron in dropout'

@@ -89,18 +89,18 @@ def run_training():
         # Create a session for running the Ops on the graph
         with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
             # Restore the variables
-            latest_ckpt_file = tf.train.latest_checkpoint(FLAGS.ckpt_dir)
+            latest_ckpt_file = tf.train.latest_checkpoint(os.path.join(FLAGS.logdir, 'ckpt'))
             if latest_ckpt_file is not None:
                 saver.restore(sess, latest_ckpt_file)
                 print('Model Restored')
+            else:
+              ############### Start Running the Ops ###############
+              # Run the Op to initialize variables
+              sess.run(init)
 
             # create a summary writer
-            summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
+            summary_writer = tf.summary.FileWriter(os.path.join(FLAGS.logdir, 'logs'), sess.graph)
             summary_merged = tf.summary.merge_all()
-
-            ############### Start Running the Ops ###############
-            # Run the Op to initialize variables
-            sess.run(init)
 
             # the training loop
             if not FLAGS.eval_only:
@@ -124,12 +124,12 @@ def run_training():
                     # save every 100 steps
                     if step % 100 == 0:
                         print('Saving Checkpoint...')
-                        checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
+                        checkpoint_file = os.path.join(os.path.join(FLAGS.logdir, 'ckpt'), 'model.ckpt')
                         saver.save(sess, checkpoint_file, global_step=step)
                         print('Checkpoint Saved!')
 
                     # print the status every 10 steps
-                    if step % 10 == 0:
+                    if step % 1 == 0:
                         summary_writer.add_summary(summary_str, step)
                         print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
 
@@ -159,11 +159,11 @@ def run_training():
                     is_val=True)
 
 def main(_):
-    if tf.gfile.Exists(FLAGS.log_dir):
-        tf.gfile.DeleteRecursively(FLAGS.log_dir)
-    if not tf.gfile.Exists(FLAGS.ckpt_dir):
-        tf.gfile.MakeDirs(FLAGS.ckpt_dir)
-    tf.gfile.MakeDirs(FLAGS.log_dir)
+    if tf.gfile.Exists(os.path.join(FLAGS.logdir, 'logs')):
+        tf.gfile.DeleteRecursively(os.path.join(FLAGS.logdir, 'logs'))
+    if not tf.gfile.Exists(os.path.join(FLAGS.logdir, 'ckpt')):
+        tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'ckpt'))
+    tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'logs'))
     
     if not tf.gfile.Exists(FLAGS.data_path):
         raise IOError('The file at' + FLAGS.data_path + ' does not exsits.')
@@ -173,9 +173,9 @@ def main(_):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--log_dir',
+        '--logdir',
         type=str,
-        default='/tmp/tensorflow/sketch-a-net/logs/training',
+        default='/tmp/tf/sn/',
         help='Directory to save the logs'
     )
     parser.add_argument(
@@ -205,19 +205,14 @@ if __name__ == '__main__':
     parser.add_argument(
         '--data_path',
         type=str,
-        default='dataset/dataset_with_order_info_256.mat',
+        default='dataset/dataset_with_order_info_224.mat',
         help='The .mat file with the dataset downloaded from http://www.eecs.qmul.ac.uk/~tmh/downloads.html'
     )
     parser.add_argument(
         '--pretrain_path',
         type=str,
-        default='dataset/model_with_order_info_256.mat',
+        default='dataset/model_with_order_info_224.mat',
         help='The .mat file with the pretrained weights downloaded from http://www.eecs.qmul.ac.uk/~tmh/downloads.html'
-    )
-    parser.add_argument(
-        '--ckpt_dir',
-        type=str,
-        default='/tmp/tensorflow/sketch-a-net/logs/ckpts'
     )
     parser.add_argument(
         '--eval_only',

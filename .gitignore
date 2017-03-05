@@ -91,4 +91,5 @@ ENV/
 .ropeproject
 
 # Mac
-*.DS_Strore
+*.DS_Store
+

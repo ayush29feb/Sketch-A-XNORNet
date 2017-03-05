@@ -158,7 +158,7 @@ def load_pretrained_model(filepath):
     
     print('Loading the pretrained model...')
 
-    data = sio.loadmat(filepath)
+    data = None if allNone else sio.loadmat(filepath)
     weights = {}
     biases = {}
     conv_idxs = [0, 3, 6, 8, 10, 13, 16, 19]

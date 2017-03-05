@@ -54,7 +54,7 @@ def run_training():
     dataset = DataLayer(FLAGS.data_path, batch_size=FLAGS.batch_size)
     
     # Load the pretrained models
-    pretrained = load_pretrained_model(FLAGS.pretrain_path) if FLAGS.pretrain else None
+    pretrained = load_pretrained_model(FLAGS.pretrain_path if FLAGS.pretrain else None)
 
     # Tell tensorflow that the model will be built into the default graph
     with tf.Graph().as_default():
@@ -87,7 +87,7 @@ def run_training():
         saver = tf.train.Saver()
 
         # Create a session for running the Ops on the graph
-        with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+        with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
             # Restore the variables
             latest_ckpt_file = tf.train.latest_checkpoint(FLAGS.ckpt_dir)
             if latest_ckpt_file is not None:

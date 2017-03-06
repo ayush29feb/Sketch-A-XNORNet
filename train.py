@@ -62,8 +62,8 @@ def run_training():
     dataset = DataLayer(FLAGS.data_path, batch_size=FLAGS.batch_size)
     
     # Load the pretrained models
-    pretrained = load_pretrained_model(FLAGS.model_path if FLAGS.pretrain else None)
-
+    pretrained = load_pretrained_model(FLAGS.model_path if FLAGS.no_pretrain else None)
+    
     # Tell tensorflow that the model will be built into the default graph
     with tf.Graph().as_default():
         ############### Create all the placeholders ###############
@@ -81,7 +81,7 @@ def run_training():
         loss = sn.loss(logits, labels_placeholder)
 
         # Add the Op to calculate and apply gradient to the graph
-        pretrain_global_step = 23000 if FLAGS.pretrain else 0
+        pretrain_global_step = 23000 if FLAGS.no_pretrain else 0
         train_op = sn.training(loss, lr=FLAGS.lr, decay_steps=FLAGS.decay_step, decay_rate=FLAGS.decay_rate, pretrain_global_step=pretrain_global_step)
 
         # Evaluation
@@ -231,12 +231,12 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--eval_only',
-        type=bool,
+        action='store_true',
         default=False
     )
     parser.add_argument(
-        '--pretrain',
-        type=bool,
+        '--no_pretrain',
+        action='store_false',
         default=True
     )
 

@@ -132,7 +132,7 @@ def run_training():
                     duration = time.time() - start_time
 
                     # save and print the status every 10 steps
-                    if step % 10 == 0:
+                    if step % 1 == 0:
                         summary_writer.add_summary(summary_str, step)
                         print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
 
@@ -195,13 +195,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--decay_step',
         type=float,
-        default=250,
+        default=10,
         help='The decay step for exponential decay learning rate'
     )
     parser.add_argument(
         '--decay_rate',
         type=float,
-        default=0.90,
+        default=0.96,
         help='The decay rate for exponential decay learning rate'
     )
     parser.add_argument(

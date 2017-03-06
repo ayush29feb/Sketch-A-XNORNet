@@ -85,7 +85,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
     # Layer 3
     with tf.name_scope('L3') as scope:
         weights3 = weight_variable((3, 3, 128, 256), None if weights is None else weights['conv3'])
-        bweights3 = binarize_weights(weights2)
+        bweights3 = binarize_weights(weights3)
         biases3 = bias_variable((256,), None if biases is None else biases['conv3'])
         conv3 = tf.nn.conv2d(pool2, bweights3, [1, 1, 1, 1], padding='SAME', name='conv3')
         relu3 = tf.nn.relu(tf.nn.bias_add(conv3, biases3), name='relu3')
@@ -94,7 +94,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
     # Layer 4
     with tf.name_scope('L4') as scope:
         weights4 = weight_variable((3, 3, 256, 256), None if weights is None else weights['conv4'])
-        bweights4 = binarize_weights(weights2)
+        bweights4 = binarize_weights(weights4)
         biases4 = bias_variable((256,), None if biases is None else biases['conv4'])
         conv4 = tf.nn.conv2d(relu3, bweights4, [1, 1, 1, 1], padding='SAME', name='conv4')
         relu4 = tf.nn.relu(tf.nn.bias_add(conv4, biases4), name='relu4')
@@ -103,7 +103,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
     # Layer 5
     with tf.name_scope('L5') as scope:
         weights5 = weight_variable((3, 3, 256, 256), None if weights is None else weights['conv5'])
-        bweights5 = binarize_weights(weights2)
+        bweights5 = binarize_weights(weights5)
         biases5 = bias_variable((256,), None if biases is None else biases['conv5'])
         conv5 = tf.nn.conv2d(relu4, bweights5, [1, 1, 1, 1], padding='SAME', name='conv5')
         relu5 = tf.nn.relu(tf.nn.bias_add(conv5, biases5), name='relu5')
@@ -113,7 +113,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
     # Layer 6
     with tf.name_scope('L6') as scope:
         weights6 = weight_variable((7, 7, 256, 512), None if weights is None else weights['conv6'])
-        bweights6 = binarize_weights(weights2)
+        bweights6 = binarize_weights(weights6)
         biases6 = bias_variable((512,), None if biases is None else biases['conv6'])
         fc6 = tf.nn.conv2d(pool5, bweights6, [1, 1, 1, 1], padding='VALID', name='fc6')
         relu6 = tf.nn.relu(tf.nn.bias_add(fc6, biases6), name='relu6')
@@ -123,7 +123,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
     # Layer 7
     with tf.name_scope('L7') as scope:
         weights7 = weight_variable((1, 1, 512, 512), None if weights is None else weights['conv7'])
-        bweights7 = binarize_weights(weights2)
+        bweights7 = binarize_weights(weights7)
         biases7 = bias_variable((512,), None if biases is None else biases['conv7'])
         fc7 = tf.nn.conv2d(dropout6, bweights7, [1, 1, 1, 1], padding='VALID', name='fc7')
         relu7 = tf.nn.relu(tf.nn.bias_add(fc7, biases7), name='relu7')
@@ -187,7 +187,7 @@ def evaluation(logits, labels, is_train):
     Return:
         Returns the number of correct predictions
     """
-    if is_train:
+    if not is_train:
         logits = tf.reduce_sum(tf.reshape(logits, [10, -1, 250]), axis=0)
     correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), 1)
     return tf.reduce_sum(tf.cast(correct, tf.int32))

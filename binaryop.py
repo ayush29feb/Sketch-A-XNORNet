@@ -34,8 +34,8 @@ def binarize_weights(x, name=None):
         x = op.inputs[0]
         n = tf.reduce_prod(tf.shape(x[:,:,:,0])[:3])
         alpha = tf.div(tf.reduce_sum(tf.abs(x), [0, 1, 2]), tf.cast(n, tf.float32))
-        ds = tf.mul(x, tf.cast(tf.less_equal(tf.abs(x), 1), tf.float32))
-        return tf.mul(grad, tf.add(tf.cast(1/n, tf.float32), tf.mul(alpha, ds)))
+        ds = tf.multiply(x, tf.cast(tf.less_equal(tf.abs(x), 1), tf.float32))
+        return tf.multiply(grad, tf.add(tf.cast(1/n, tf.float32), tf.multiply(alpha, ds)))
         
     with ops.name_scope(name, 'BinarizeWeights', [x]) as name:
         fx = py_func(f, [x], [tf.float32], name=name, grad=df)

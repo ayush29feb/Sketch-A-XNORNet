@@ -155,7 +155,7 @@ def load_pretrained_model(filepath):
     Returns:
         Returns the dictionary with all the weights and biases for respective layers
     """
-    if not os.path.isfile(filepath):
+    if filepath is None or not os.path.isfile(filepath):
         print 'Pretrained Model Not Available!'
         return None, None
 

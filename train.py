@@ -80,7 +80,8 @@ def run_training():
         loss = sn.loss(logits, labels_placeholder)
 
         # Add the Op to calculate and apply gradient to the graph
-        train_op = sn.training(loss, FLAGS.lr, FLAGS.decay_step, FLAGS.decay_rate)
+        pretrain_global_step = 23000 if FLAGS.pretrain else 0
+        train_op = sn.training(loss, lr=FLAGS.lr, decay_step=FLAGS.decay_step, decay_rate=FLAGS.decay_rate, pretrain_global_step=pretrain_global_step)
 
         # Evaluation
         eval_correct_train = sn.evaluation(logits, labels_placeholder, is_train=True)
@@ -233,6 +234,11 @@ if __name__ == '__main__':
         '--eval_only',
         type=bool,
         default=False
+    )
+    parser.add_argument(
+        '--pretrain',
+        type=bool,
+        default=True
     )
 
     FLAGS, unparsed = parser.parse_known_args()

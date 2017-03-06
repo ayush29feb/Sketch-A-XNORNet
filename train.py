@@ -106,7 +106,6 @@ def run_training():
                 print('Model Restored')
             else:
                 sess.run(init)
-                print('Randomly Initialized Weights')
 
             # the training loop
             if not FLAGS.eval_only:

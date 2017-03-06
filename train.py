@@ -128,16 +128,15 @@ def run_training():
                     # save and print the status every 10 steps
                     if step % 5 == 0:
                         summary_writer.add_summary(summary_str, step)
+                        print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
 
-                        print('Saving Checkpoint...')
+                    # evalutae the model every 10 epochs
+                    if (step + 1) % (epoch_size) == 0:
+                        # Save Model
                         checkpoint_file = os.path.join(FLAGS.logdir, 'ckpt', 'model.ckpt')
                         saver.save(sess, checkpoint_file, global_step=step)
                         print('Checkpoint Saved!')
 
-                        print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
-
-                    # evalutae the model every 10 epochs
-                    if (step + 1) % (10 * epoch_size) == 0:
                         # Do evaluation of the validation set
                         do_eval(sess, 
                                 eval_correct_test, 
@@ -184,7 +183,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--lr',
         type=float,
-        default=0.001,
+        default=0.0001,
         help='The initial learning rate for the optimizer'
     )
     parser.add_argument(

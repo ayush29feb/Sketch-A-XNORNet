@@ -178,7 +178,7 @@ def evaluation(logits, labels, is_train):
     Return:
         Returns the number of correct predictions
     """
-    if is_train:
+    if not is_train:
         logits = tf.reduce_sum(tf.reshape(logits, [10, -1, 250]), axis=0)
     correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), 1)
     return tf.reduce_sum(tf.cast(correct, tf.int32))

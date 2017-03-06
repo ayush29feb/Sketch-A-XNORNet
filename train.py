@@ -87,19 +87,18 @@ def run_training():
 
         # Create a session for running the Ops on the graph
         with tf.Session() as sess:
-            # Restore the variables
-            latest_ckpt_file = tf.train.latest_checkpoint(os.path.join(FLAGS.logdir, 'ckpt'))
-            if latest_ckpt_file is not None:
-                saver.restore(sess, latest_ckpt_file)
-                print('Model Restored')
-
             # create a summary writer
             summary_writer = tf.summary.FileWriter(os.path.join(FLAGS.logdir, 'log'), sess.graph)
             summary_merged = tf.summary.merge_all()
 
-            ############### Start Running the Ops ###############
-            # Run the Op to initialize variables
-            sess.run(init)
+            # Restore the variables or Run the Op to initialize variables
+            latest_ckpt_file = tf.train.latest_checkpoint(os.path.join(FLAGS.logdir, 'ckpt'))
+            if latest_ckpt_file is not None:
+                saver.restore(sess, latest_ckpt_file)
+                print('Model Restored')
+            else:
+                sess.run(init)
+                print('Randomly Initialized Weights')
 
             # the training loop
             if not FLAGS.eval_only:

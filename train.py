@@ -42,7 +42,7 @@ def do_eval(sess,
         true_count += count
         duration = time.time() - start_time
         total_duration += duration 
-        # print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' % (dataset.batch_size, count, float(count) / dataset.batch_size, duration))
+        print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' % (dataset.batch_size, count, float(count) / dataset.batch_size, duration))
     precision = float(true_count) / num_examples
     print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
         (num_examples, true_count, precision, total_duration))
@@ -129,12 +129,12 @@ def run_training():
                         print('Checkpoint Saved!')
 
                     # print the status every 10 steps
-                    if step % 1 == 0:
+                    if step % 10 == 0:
                         summary_writer.add_summary(summary_str, step)
-                        print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+                        print('Step %d: loss = %.5f (%.3f sec)' % (step, loss_value, duration))
 
                     # evalutae the model every 10 epochs
-                    if (step + 1) % (10 * epoch_size) == 0:
+                    if (step + 1) % (5 * epoch_size) == 0:
                         # Do evaluation of the validation set
                         do_eval(sess, 
                                 eval_correct_test, 
@@ -144,12 +144,14 @@ def run_training():
                                 is_val=True)
                         
                         # Do evaluation of the training set
+                        """
                         do_eval(sess, 
                                 eval_correct_train, 
                                 images_placeholder,
                                 labels_placeholder,
                                 dataset,
                                 is_val=False)
+                        """
             # Final Evaluation
             do_eval(sess, 
                     eval_correct_test, 
@@ -205,13 +207,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--data_path',
         type=str,
-        default='dataset/dataset_with_order_info_224.mat',
+        default='dataset/dataset_with_order_info_256.mat',
         help='The .mat file with the dataset downloaded from http://www.eecs.qmul.ac.uk/~tmh/downloads.html'
     )
     parser.add_argument(
         '--pretrain_path',
         type=str,
-        default='dataset/model_with_order_info_224.mat',
+        default='dataset/model_with_order_info_256.mat',
         help='The .mat file with the pretrained weights downloaded from http://www.eecs.qmul.ac.uk/~tmh/downloads.html'
     )
     parser.add_argument(

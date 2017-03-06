@@ -20,31 +20,39 @@ import sketchnet as sn
 
 FLAGS = None
 
-def do_eval(sess, 
-            eval_correct, 
-            images_placeholder,
-            labels_placeholder,
-            dataset,
-            is_val):
-    
-    num_examples = (DataLayer.NUM_TEST_ITEMS_PER_CLASS if is_val else DataLayer.NUM_TRAIN_ITEMS_PER_CLASS) * DataLayer.NUM_CLASSES
-    steps_per_epoch = num_examples // dataset.batch_size
+def do_eval(sess, eval_correct, images_placeholder, labels_placeholder, dataset, is_train):
+    """Evaluation Step
+    """
+    # calculate variable for looping over the entire test set once
+    num_examples = (DataLayer.NUM_TRAIN_ITEMS_PER_CLASS if is_train else DataLayer.NUM_TEST_ITEMS_PER_CLASS) * DataLayer.NUM_CLASSES
+    steps_per_epoch = num_examples // (dataset.train_batch_size if is_train else dataset.test_batch_size)
+    last_step_size = num_examples % (dataset.train_batch_size if is_train else dataset.test_batch_size)
+
+    # runnning stats
     true_count = 0
-    total_duration = 0
+    start_time = time.time()
+
+    # eval loop
     for step in xrange(steps_per_epoch):
-        start_time = time.time()
-        images, labels = dataset.next_batch_test() if is_val else dataset.next_batch_train()
-        count = sess.run(eval_correct, feed_dict={
-            images_placeholder: images, 
-            labels_placeholder: labels})
-        true_count += count
-        duration = time.time() - start_time
-        total_duration += duration    
-        # print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
-        # (dataset.batch_size, count, float(count) / dataset.batch_size, duration))
+        images, labels = dataset.next_batch_train() if is_train else dataset.next_batch_test()
+        true_count += sess.run(eval_correct, feed_dict={
+            images_placeholder: images,
+            labels_placeholder: labels
+        })
+    
+    # run remaining examples
+    if last_step_size > 0:
+        images, labels = dataset.next_batch_train(last_step_size) if is_train else dataset.next_batch_test(last_step_size)
+        true_count += sess.run(eval_correct, feed_dict={
+            images_placeholder: images,
+            labels_placeholder: labels
+        })
+    
+    # print logs
+    duration = time.time() - duration
     precision = float(true_count) / num_examples
     print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
-        (num_examples, true_count, precision, total_duration))
+        (num_examples, true_count, precision, duration))
 
 def run_training():
     """Trains and evaluates the Sketch-A-Net network
@@ -76,8 +84,8 @@ def run_training():
         train_op = sn.training(loss, lr_placeholder)
 
         # Evaluation
-        eval_correct_train = sn.evaluation(logits, labels_placeholder, False)
-        eval_correct_test = sn.evaluation(logits, labels_placeholder, True)
+        eval_correct_train = sn.evaluation(logits, labels_placeholder, is_train=True)
+        eval_correct_test = sn.evaluation(logits, labels_placeholder, is_train=False)
 
         # Add the variable initializer Op to the graph
         init = tf.global_variables_initializer()
@@ -138,7 +146,7 @@ def run_training():
                                 images_placeholder,
                                 labels_placeholder,
                                 dataset,
-                                is_val=True)
+                                is_train=False)
                         
                         # Do evaluation of the training set
                         do_eval(sess, 
@@ -146,14 +154,14 @@ def run_training():
                                 images_placeholder,
                                 labels_placeholder,
                                 dataset,
-                                is_val=False)
+                                is_train=True)
             # Final Evaluation
             do_eval(sess, 
                     eval_correct_test, 
                     images_placeholder,
                     labels_placeholder,
                     dataset,
-                    is_val=True)
+                    is_train=False)
 
 def main(_):
     if tf.gfile.Exists(os.path.join(FLAGS.logdir, 'log')):

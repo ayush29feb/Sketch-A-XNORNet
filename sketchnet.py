@@ -164,7 +164,7 @@ def training(loss, learning_rate):
     tf.summary.scalar('global step', global_step)
     return train_op
 
-def evaluation(logits, labels, validation):
+def evaluation(logits, labels, is_train):
     """Evaluates the number of correct predictions for the given logits and labels
 
     Args:
@@ -174,7 +174,7 @@ def evaluation(logits, labels, validation):
     Return:
         Returns the number of correct predictions
     """
-    if validation:
+    if is_train:
         logits = tf.reduce_sum(tf.reshape(logits, [10, -1, 250]), axis=0)
     correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), 1)
     return tf.reduce_sum(tf.cast(correct, tf.int32))

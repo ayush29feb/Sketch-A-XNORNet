@@ -23,6 +23,7 @@ FLAGS = None
 def do_eval(sess, eval_correct, images_placeholder, labels_placeholder, dataset, is_train):
     """Evaluation Step
     """
+    print('Running Evaluation on ' + ('train' if is_train else 'test') + 'set')
     # calculate variable for looping over the entire test set once
     num_examples = (DataLayer.NUM_TRAIN_ITEMS_PER_CLASS if is_train else DataLayer.NUM_TEST_ITEMS_PER_CLASS) * DataLayer.NUM_CLASSES
     steps_per_epoch = num_examples // (dataset.train_batch_size if is_train else dataset.test_batch_size)
@@ -49,7 +50,7 @@ def do_eval(sess, eval_correct, images_placeholder, labels_placeholder, dataset,
         })
     
     # print logs
-    duration = time.time() - duration
+    duration = time.time() - start_time
     precision = float(true_count) / num_examples
     print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
         (num_examples, true_count, precision, duration))

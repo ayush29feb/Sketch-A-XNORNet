@@ -62,7 +62,7 @@ def run_training():
     dataset = DataLayer(FLAGS.data_path, batch_size=FLAGS.batch_size)
     
     # Load the pretrained models
-    pretrained = load_pretrained_model(FLAGS.model_path)
+    pretrained = load_pretrained_model(FLAGS.model_path if FLAGS.pretrain else None)
 
     # Tell tensorflow that the model will be built into the default graph
     with tf.Graph().as_default():

@@ -53,27 +53,27 @@ def run_training():
     dataset = DataLayer(FLAGS.data_path, batch_size=FLAGS.batch_size)
     
     # Load the pretrained models
-    pretrained = load_pretrained_model(FLAGS.pretrain_path)
+    pretrained = load_pretrained_model(FLAGS.model_path)
 
     # Tell tensorflow that the model will be built into the default graph
     with tf.Graph().as_default():
         ############### Create all the placeholders ###############
-        # Instantiate the required placeholders for images, labels, dropout, learning_rate
+        # Instantiate the required placeholders for images, labels, dropout, learning rate
         images_placeholder = tf.placeholder(tf.float32, name='images_pl')       
         labels_placeholder = tf.placeholder(tf.float32, name='labels_pl')
 
-        dropout_rate_placeholder = tf.placeholder_with_default(1.0, shape=(), name='learning_rate_pl')
-        learning_rate_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, shape=(), name='learning_rate_pl')
+        dr_placeholder = tf.placeholder_with_default(1.0, shape=(), name='dr_pl')
+        lr_placeholder = tf.placeholder_with_default(FLAGS.lr, shape=(), name='lr_pl')
 
         ############### Declare all the Ops for the graph ###############
         # Build a graph that computes predictions from the inference model
-        logits = sn.inference(images_placeholder, dropout_rate_placeholder, pretrained=pretrained)
+        logits = sn.inference(images_placeholder, dr_placeholder, pretrained=pretrained)
 
         # Add the loss Op to the graph
         loss = sn.loss(logits, labels_placeholder)
 
         # Add the Op to calculate and apply gradient to the graph
-        train_op = sn.training(loss, learning_rate_placeholder)
+        train_op = sn.training(loss, lr_placeholder)
 
         # Evaluation
         eval_correct_train = sn.evaluation(logits, labels_placeholder, False)
@@ -88,13 +88,13 @@ def run_training():
         # Create a session for running the Ops on the graph
         with tf.Session() as sess:
             # Restore the variables
-            latest_ckpt_file = tf.train.latest_checkpoint(FLAGS.ckpt_dir)
+            latest_ckpt_file = tf.train.latest_checkpoint(os.path.join(FLAGS.logdir, 'ckpt'))
             if latest_ckpt_file is not None:
                 saver.restore(sess, latest_ckpt_file)
                 print('Model Restored')
 
             # create a summary writer
-            summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
+            summary_writer = tf.summary.FileWriter(os.path.join(FLAGS.logdir, 'log'), sess.graph)
             summary_merged = tf.summary.merge_all()
 
             ############### Start Running the Ops ###############
@@ -113,8 +113,8 @@ def run_training():
                     feed_dict = {
                         images_placeholder: images,
                         labels_placeholder: labels,
-                        dropout_rate_placeholder: FLAGS.dropout_rate,
-                        learning_rate_placeholder: FLAGS.learning_rate
+                        dr_placeholder: FLAGS.dr,
+                        lr_placeholder: FLAGS.lr
                     }
                     _, loss_value, summary_str = sess.run([train_op, loss, summary_merged], feed_dict=feed_dict)
                     
@@ -125,7 +125,7 @@ def run_training():
                         summary_writer.add_summary(summary_str, step)
 
                         print('Saving Checkpoint...')
-                        checkpoint_file = os.path.join(FLAGS.ckpt_dir, 'model.ckpt')
+                        checkpoint_file = os.path.join(FLAGS.logdir, 'ckpt', 'model.ckpt')
                         saver.save(sess, checkpoint_file, global_step=step)
                         print('Checkpoint Saved!')
 
@@ -157,11 +157,11 @@ def run_training():
                     is_val=True)
 
 def main(_):
-    if tf.gfile.Exists(FLAGS.log_dir):
-        tf.gfile.DeleteRecursively(FLAGS.log_dir)
-    if not tf.gfile.Exists(FLAGS.ckpt_dir):
-        tf.gfile.MakeDirs(FLAGS.ckpt_dir)
-    tf.gfile.MakeDirs(FLAGS.log_dir)
+    if tf.gfile.Exists(os.path.join(FLAGS.logdir, 'log')):
+        tf.gfile.DeleteRecursively(os.path.join(FLAGS.logdir, 'log'))
+    if not tf.gfile.Exists(os.path.join(FLAGS.logdir, 'ckpt')):
+        tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'ckpt'))
+    tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'log'))
     
     if not tf.gfile.Exists(FLAGS.data_path):
         raise IOError('The file at' + FLAGS.data_path + ' does not exsits.')
@@ -171,19 +171,19 @@ def main(_):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--log_dir',
+        '--logdir',
         type=str,
-        default='/tmp/tensorflow/sketch-a-net/logs/training',
+        default='/tmp/tensorflow/sketch-a-net/',
         help='Directory to save the logs'
     )
     parser.add_argument(
-        '--learning_rate',
+        '--lr',
         type=float,
         default=0.001,
         help='The initial learning rate for the optimizer'
     )
     parser.add_argument(
-        '--dropout_rate',
+        '--dr',
         type=float,
         default=0.5,
         help='The probability to keep a neuron in dropout'
@@ -207,15 +207,10 @@ if __name__ == '__main__':
         help='The .mat file with the dataset downloaded from http://www.eecs.qmul.ac.uk/~tmh/downloads.html'
     )
     parser.add_argument(
-        '--pretrain_path',
+        '--model_path',
         type=str,
         default='dataset/model_with_order_info_256.mat',
         help='The .mat file with the pretrained weights downloaded from http://www.eecs.qmul.ac.uk/~tmh/downloads.html'
-    )
-    parser.add_argument(
-        '--ckpt_dir',
-        type=str,
-        default='/tmp/tensorflow/sketch-a-net/logs/ckpts'
     )
     parser.add_argument(
         '--eval_only',

@@ -29,7 +29,8 @@ class DataLayer:
         # initialize the cursors to keep track where we are in the Dataset
         self.train_cursor = 0
         self.test_cursor = 0
-        self.batch_size = batch_size
+        self.train_batch_size = batch_size
+        self.test_batch_size = batch_size // 10
 
         # initialize the idx arrays
         a_train_ = np.tile(np.arange(self.NUM_TRAIN_ITEMS_PER_CLASS), self.NUM_CLASSES).reshape(self.NUM_CLASSES, self.NUM_TRAIN_ITEMS_PER_CLASS)
@@ -68,7 +69,7 @@ class DataLayer:
 
         # set the batch_size and output_size to class default
         if batch_size is None:
-            batch_size = self.batch_size
+            batch_size = self.train_batch_size
         output_size = self.OUTPUT_SIZE
         input_size = self.INPUT_SIZE
 
@@ -120,7 +121,7 @@ class DataLayer:
 
         # set the batch_size and output_size to class default
         if batch_size is None:
-            batch_size = self.batch_size
+            batch_size = self.test_batch_size
         output_size = self.OUTPUT_SIZE
         input_size = self.INPUT_SIZE
 
@@ -158,9 +159,8 @@ def load_pretrained_model(filepath):
         Returns the dictionary with all the weights and biases for respective layers
     """
     if not os.path.isfile(filepath):
+        print 'Pretrained Model Not Available!'
         return None, None
-    
-    print('Loading the pretrained model...')
 
     data = sio.loadmat(filepath)
     weights = {}
@@ -170,5 +170,5 @@ def load_pretrained_model(filepath):
         weights['conv' + str(i + 1)] = data['net']['layers'][0][0][0][idx]['filters'][0][0]
         biases['conv' + str(i + 1)] = data['net']['layers'][0][0][0][idx]['biases'][0][0].reshape(-1)
     
-    print('Pretrained model loaded!')
+    print('Pretrained Model Loaded!')
     return (weights, biases)

@@ -71,7 +71,6 @@ def run_training():
         labels_placeholder = tf.placeholder(tf.float32, name='labels_pl')
 
         dr_placeholder = tf.placeholder_with_default(1.0, shape=(), name='dr_pl')
-        lr_placeholder = tf.placeholder_with_default(FLAGS.lr, shape=(), name='lr_pl')
 
         ############### Declare all the Ops for the graph ###############
         # Build a graph that computes predictions from the inference model
@@ -81,7 +80,7 @@ def run_training():
         loss = sn.loss(logits, labels_placeholder)
 
         # Add the Op to calculate and apply gradient to the graph
-        train_op = sn.training(loss, lr_placeholder)
+        train_op = sn.training(loss, FLAGS.lr, FLAGS.decay_step, FLAGS.decay_rate)
 
         # Evaluation
         eval_correct_train = sn.evaluation(logits, labels_placeholder, is_train=True)
@@ -120,8 +119,7 @@ def run_training():
                     feed_dict = {
                         images_placeholder: images,
                         labels_placeholder: labels,
-                        dr_placeholder: FLAGS.dr,
-                        lr_placeholder: FLAGS.lr
+                        dr_placeholder: FLAGS.dr
                     }
                     _, loss_value, summary_str = sess.run([train_op, loss, summary_merged], feed_dict=feed_dict)
                     
@@ -188,6 +186,18 @@ if __name__ == '__main__':
         type=float,
         default=0.001,
         help='The initial learning rate for the optimizer'
+    )
+    parser.add_argument(
+        '--decay_step',
+        type=float,
+        default=100,
+        help='The decay step for exponential decay learning rate'
+    )
+    parser.add_argument(
+        '--decay_rate',
+        type=float,
+        default=0.96,
+        help='The decay rate for exponential decay learning rate'
     )
     parser.add_argument(
         '--dr',

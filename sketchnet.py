@@ -149,7 +149,7 @@ def loss(logits, labels):
     tf.summary.scalar('loss', xentropy_mean)
     return xentropy_mean
 
-def training(loss, learning_rate):
+def training(loss, lr, decay_steps=100, decay_rate=0.96, staircase=True):
     """Returns the training Op for the loss function using the AdamOptimizer
 
     Args:
@@ -158,10 +158,14 @@ def training(loss, learning_rate):
     Returns:
         train_op: the tensorflow's trainig Op
     """
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     global_step = tf.Variable(0, name='global_step', trainable=False)
+    learning_rate = tf.train.exponential_decay(lr, global_step, decay_steps, decay_rate, staircase, name='learning_rate')
+
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     train_op = optimizer.minimize(loss, global_step=global_step)
+    
     tf.summary.scalar('global step', global_step)
+    tf.summary.scalar('learning_rate', learning_rate)
     return train_op
 
 def evaluation(logits, labels, is_train):

@@ -67,7 +67,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         conv1 = tf.nn.conv2d(images, weights1, [1, 3, 3, 1], padding='VALID', name='conv1')
         relu1 = tf.nn.relu(tf.nn.bias_add(conv1, biases1), name='relu1')
         pool1 = tf.nn.max_pool(relu1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool1')
-        _activation_summary(pool1)
+        # _activation_summary(pool1)
 
     # Layer 2
     with tf.name_scope('L2') as scope:
@@ -76,7 +76,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         conv2 = tf.nn.conv2d(pool1, weights2, [1, 1, 1, 1], padding='VALID', name='conv2')
         relu2 = tf.nn.relu(tf.nn.bias_add(conv2, biases2), name='relu2')
         pool2 = tf.nn.max_pool(relu2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
-        _activation_summary(pool2)
+        # _activation_summary(pool2)
 
     # Layer 3
     with tf.name_scope('L3') as scope:
@@ -84,7 +84,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         biases3 = bias_variable((256,), None if biases is None else biases['conv3'])
         conv3 = tf.nn.conv2d(pool2, weights3, [1, 1, 1, 1], padding='SAME', name='conv3')
         relu3 = tf.nn.relu(tf.nn.bias_add(conv3, biases3), name='relu3')
-        _activation_summary(relu3)
+        # _activation_summary(relu3)
 
     # Layer 4
     with tf.name_scope('L4') as scope:
@@ -92,7 +92,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         biases4 = bias_variable((256,), None if biases is None else biases['conv4'])
         conv4 = tf.nn.conv2d(relu3, weights4, [1, 1, 1, 1], padding='SAME', name='conv4')
         relu4 = tf.nn.relu(tf.nn.bias_add(conv4, biases4), name='relu4')
-        _activation_summary(relu4)
+        # _activation_summary(relu4)
 
     # Layer 5
     with tf.name_scope('L5') as scope:
@@ -101,7 +101,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         conv5 = tf.nn.conv2d(relu4, weights5, [1, 1, 1, 1], padding='SAME', name='conv5')
         relu5 = tf.nn.relu(tf.nn.bias_add(conv5, biases5), name='relu5')
         pool5 = tf.nn.max_pool(relu5, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool5')
-        _activation_summary(pool5)
+        # _activation_summary(pool5)
 
     # Layer 6
     with tf.name_scope('L6') as scope:
@@ -110,7 +110,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         fc6 = tf.nn.conv2d(pool5, weights6, [1, 1, 1, 1], padding='VALID', name='fc6')
         relu6 = tf.nn.relu(tf.nn.bias_add(fc6, biases6), name='relu6')
         dropout6 = tf.nn.dropout(relu6, keep_prob=dropout_prob, name='dropout6')
-        _activation_summary(dropout6)
+        # _activation_summary(dropout6)
 
     # Layer 7
     with tf.name_scope('L7') as scope:
@@ -119,14 +119,14 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         fc7 = tf.nn.conv2d(dropout6, weights7, [1, 1, 1, 1], padding='VALID', name='fc7')
         relu7 = tf.nn.relu(tf.nn.bias_add(fc7, biases7), name='relu7')
         dropout7 = tf.nn.dropout(relu7, keep_prob=dropout_prob, name='dropout7')
-        _activation_summary(dropout7)
+        # _activation_summary(dropout7)
 
     # Layer 8
     with tf.name_scope('L8') as scope:
         weights8 = weight_variable((1, 1, 512, 250), None if weights is None else weights['conv8'])
         biases8 = bias_variable((250,), None if biases is None else biases['conv8'])
         fc8 = tf.nn.conv2d(dropout7, weights8, [1, 1, 1, 1], padding='VALID', name='fc8')
-        _activation_summary(fc8)
+        # _activation_summary(fc8)
 
     logits = tf.reshape(fc8, [-1, 250])
     

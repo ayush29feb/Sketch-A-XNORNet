@@ -190,13 +190,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--decay_step',
         type=float,
-        default=100,
+        default=250,
         help='The decay step for exponential decay learning rate'
     )
     parser.add_argument(
         '--decay_rate',
         type=float,
-        default=0.96,
+        default=0.90,
         help='The decay rate for exponential decay learning rate'
     )
     parser.add_argument(
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=135,
+        default=54,
         help='The batch_size'
     )
     parser.add_argument(

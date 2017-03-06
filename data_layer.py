@@ -79,7 +79,6 @@ class DataLayer:
             idxs = np.append(idxs, self.train_idxs[:(self.train_cursor+batch_size - self.train_idxs.size)])
 
         # retrieve the images and labels
-        print('Retrieving the next training batch...')
         labels = self.dataset_labels[idxs, :].reshape(-1)
         images_raw = self.dataset_images[idxs, :, :, :].swapaxes(1, 3)
 
@@ -100,8 +99,6 @@ class DataLayer:
 
         # move the cursors
         self.train_cursor = (self.train_cursor + batch_size) % (self.NUM_TRAIN_ITEMS_PER_CLASS * self.NUM_CLASSES)
-
-        print('Retrieved the next training batch!')
 
         return (255 - images, labels - 1)
 

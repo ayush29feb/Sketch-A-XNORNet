@@ -46,9 +46,10 @@ def _activation_summary(x):
     nothing
   """
   tensor_name = x.op.name
-  tf.summary.histogram(tensor_name + '/activations', x)
-  tf.summary.scalar(tensor_name + '/sparsity',
-                                       tf.nn.zero_fraction(x))
+  # tf.summary.image(tensor_name + '/images', x)
+  # tf.summary.histogram(tensor_name + '/activations', x)
+  # tf.summary.scalar(tensor_name + '/sparsity',
+  #                                     tf.nn.zero_fraction(x))
 
 def inference(images, dropout_prob=1.0, pretrained=(None, None)):
     """This prepares the tensorflow graph for the vanilla Sketch-A-Net network
@@ -70,7 +71,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         conv1 = tf.nn.conv2d(images, weights1, [1, 3, 3, 1], padding='VALID', name='conv1')
         relu1 = tf.nn.relu(tf.nn.bias_add(conv1, biases1), name='relu1')
         pool1 = tf.nn.max_pool(relu1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool1')
-        # _activation_summary(pool1)
+        _activation_summary(relu1)
 
     # Layer 2
     with tf.name_scope('L2') as scope:
@@ -80,7 +81,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         conv2 = tf.nn.conv2d(pool1, bweights2, [1, 1, 1, 1], padding='VALID', name='conv2')
         relu2 = tf.nn.relu(tf.nn.bias_add(conv2, biases2), name='relu2')
         pool2 = tf.nn.max_pool(relu2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
-        # _activation_summary(pool2)
+        _activation_summary(relu2)
 
     # Layer 3
     with tf.name_scope('L3') as scope:
@@ -176,7 +177,8 @@ def training(loss, lr, decay_steps=100, decay_rate=0.96, staircase=True, pretrai
     train_op = optimizer.apply_gradients(gradlist, global_step=global_step)
     for grad, var in gradlist:
         if grad is not None:
-            tf.summary.histogram(var.name, grad)
+            pass 
+            # tf.summary.histogram(var.name, grad)
     tf.summary.scalar('global step', global_step)
     tf.summary.scalar('learning_rate', learning_rate)
     return train_op

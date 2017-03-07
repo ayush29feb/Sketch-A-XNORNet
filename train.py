@@ -154,7 +154,7 @@ def run_training():
                                 labels_placeholder,
                                 dataset,
                                 is_train=False)
-                        
+                    
                         # Do evaluation of the training set
                         do_eval(sess, 
                                 eval_correct_train, 
@@ -172,8 +172,7 @@ def run_training():
 
 def main(_):
     if tf.gfile.Exists(os.path.join(FLAGS.logdir, 'log')):
-        # tf.gfile.DeleteRecursively(os.path.join(FLAGS.logdir, 'log'))
-        pass
+        tf.gfile.DeleteRecursively(os.path.join(FLAGS.logdir, 'log'))
     if not tf.gfile.Exists(os.path.join(FLAGS.logdir, 'ckpt')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'ckpt'))
     tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'log'))
@@ -194,7 +193,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--lr',
         type=float,
-        default=0.00001,
+        default=0.001,
         help='The initial learning rate for the optimizer'
     )
     parser.add_argument(

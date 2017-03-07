@@ -132,17 +132,21 @@ def run_training():
                     duration = time.time() - start_time
 
                     # save and print the status every 10 steps
-                    if step % 1 == 0:
+                    if step % epoch_size == 0:
                         summary_writer.add_summary(summary_str, step)
+                    
+                    if step % 10 == 0:
                         print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
 
-                    # evalutae the model every 10 epochs
-                    if (step + 1) % (10 * epoch_size) == 0:
+                    # save model every 5 epochs
+                    if (step + 1) % (5 * epoch_size) == 0:
                         # Save Model
                         checkpoint_file = os.path.join(FLAGS.logdir, 'ckpt', 'model.ckpt')
                         saver.save(sess, checkpoint_file, global_step=step)
                         print('Checkpoint Saved!')
 
+                    # evalutae the model every 10 epochs
+                    if (step + 1) % (10 * epoch_size) == 0:
                         # Do evaluation of the validation set
                         do_eval(sess, 
                                 eval_correct_test, 
@@ -168,7 +172,8 @@ def run_training():
 
 def main(_):
     if tf.gfile.Exists(os.path.join(FLAGS.logdir, 'log')):
-        tf.gfile.DeleteRecursively(os.path.join(FLAGS.logdir, 'log'))
+        # tf.gfile.DeleteRecursively(os.path.join(FLAGS.logdir, 'log'))
+        pass
     if not tf.gfile.Exists(os.path.join(FLAGS.logdir, 'ckpt')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'ckpt'))
     tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'log'))
@@ -189,19 +194,19 @@ if __name__ == '__main__':
     parser.add_argument(
         '--lr',
         type=float,
-        default=0.0001,
+        default=0.00001,
         help='The initial learning rate for the optimizer'
     )
     parser.add_argument(
         '--decay_step',
         type=float,
-        default=10,
+        default=250,
         help='The decay step for exponential decay learning rate'
     )
     parser.add_argument(
         '--decay_rate',
         type=float,
-        default=0.96,
+        default=0.90,
         help='The decay rate for exponential decay learning rate'
     )
     parser.add_argument(

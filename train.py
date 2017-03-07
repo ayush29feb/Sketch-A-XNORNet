@@ -86,7 +86,7 @@ def run_training():
         loss = sn.loss(logits, labels_placeholder)
 
         # Add the Op to calculate and apply gradient to the graph
-        pretrain_global_step = 23000 if FLAGS.no_pretrain else 0
+        pretrain_global_step = 10000 if FLAGS.no_pretrain else 0
         train_op = sn.training(loss, lr=FLAGS.lr, decay_steps=FLAGS.decay_step, decay_rate=FLAGS.decay_rate, pretrain_global_step=pretrain_global_step)
 
         # Evaluation

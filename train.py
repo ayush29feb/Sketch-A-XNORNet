@@ -16,7 +16,7 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from data_layer import DataLayer, load_pretrained_model
-import sketchnet as sn
+import bwsketchnet as sn
 
 FLAGS = None
 
@@ -28,7 +28,7 @@ def do_eval(sess, eval_correct, images_placeholder, labels_placeholder, dataset,
     num_examples = (DataLayer.NUM_TRAIN_ITEMS_PER_CLASS if is_train else DataLayer.NUM_TEST_ITEMS_PER_CLASS) * DataLayer.NUM_CLASSES
     steps_per_epoch = num_examples // (dataset.train_batch_size if is_train else dataset.test_batch_size)
     last_step_size = num_examples % (dataset.train_batch_size if is_train else dataset.test_batch_size)
-
+    batch_size = (dataset.train_batch_size if is_train else dataset.test_batch_size)
     # runnning stats
     true_count = 0
     start_time = time.time()
@@ -36,10 +36,14 @@ def do_eval(sess, eval_correct, images_placeholder, labels_placeholder, dataset,
     # eval loop
     for step in xrange(steps_per_epoch):
         images, labels = dataset.next_batch_train() if is_train else dataset.next_batch_test()
-        true_count += sess.run(eval_correct, feed_dict={
+        count = sess.run(eval_correct, feed_dict={
             images_placeholder: images,
             labels_placeholder: labels
         })
+        true_count += count
+        # precision = float(count) / batch_size
+        # print ('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %
+        #    (batch_size, count, precision))
     
     # run remaining examples
     if last_step_size > 0:
@@ -52,6 +56,7 @@ def do_eval(sess, eval_correct, images_placeholder, labels_placeholder, dataset,
     # print logs
     duration = time.time() - start_time
     precision = float(true_count) / num_examples
+    tf.summary.scalar('precision', precision)
     print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
         (num_examples, true_count, precision, duration))
 
@@ -85,8 +90,8 @@ def run_training():
         train_op = sn.training(loss, lr=FLAGS.lr, decay_steps=FLAGS.decay_step, decay_rate=FLAGS.decay_rate, pretrain_global_step=pretrain_global_step)
 
         # Evaluation
-        eval_correct_train = sn.evaluation(logits, labels_placeholder, is_train=True)
-        eval_correct_test = sn.evaluation(logits, labels_placeholder, is_train=False)
+        eval_correct_train = sn.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=True)
+        eval_correct_test = sn.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=False)
 
         # Add the variable initializer Op to the graph
         init = tf.global_variables_initializer()
@@ -127,17 +132,21 @@ def run_training():
                     duration = time.time() - start_time
 
                     # save and print the status every 10 steps
-                    if step % 5 == 0:
+                    if step % epoch_size == 0:
                         summary_writer.add_summary(summary_str, step)
+                    
+                    if step % 10 == 0:
                         print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
 
-                    # evalutae the model every 10 epochs
-                    if (step + 1) % (epoch_size) == 0:
+                    # save model every 5 epochs
+                    if (step + 1) % (5 * epoch_size) == 0:
                         # Save Model
                         checkpoint_file = os.path.join(FLAGS.logdir, 'ckpt', 'model.ckpt')
                         saver.save(sess, checkpoint_file, global_step=step)
                         print('Checkpoint Saved!')
 
+                    # evalutae the model every 10 epochs
+                    if (step + 1) % (10 * epoch_size) == 0:
                         # Do evaluation of the validation set
                         do_eval(sess, 
                                 eval_correct_test, 
@@ -145,7 +154,7 @@ def run_training():
                                 labels_placeholder,
                                 dataset,
                                 is_train=False)
-                        
+                    
                         # Do evaluation of the training set
                         do_eval(sess, 
                                 eval_correct_train, 
@@ -184,7 +193,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--lr',
         type=float,
-        default=0.0001,
+        default=0.001,
         help='The initial learning rate for the optimizer'
     )
     parser.add_argument(
@@ -216,6 +225,12 @@ if __name__ == '__main__':
         type=int,
         default=500,
         help='epoch size, the number of times the trainer should use the dataset'
+    )
+    parser.add_argument(
+        'topk',
+        type=int,
+        default=1,
+        help='top-k accuracy'
     )
     parser.add_argument(
         '--data_path',

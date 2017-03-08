@@ -48,7 +48,7 @@ def _activation_summary(x):
   tf.summary.scalar(tensor_name + '/sparsity',
                                        tf.nn.zero_fraction(x))
 
-def inference(images, dropout_prob=1.0, pretrained=(None, None)):
+def inference(images, dropout_prob=1.0, pretrained=(None, None), visualize=False):
     """This prepares the tensorflow graph for the vanilla Sketch-A-Net network
     and returns the tensorflow Op from the last fully connected layer
 
@@ -128,8 +128,19 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         fc8 = tf.nn.conv2d(dropout7, weights8, [1, 1, 1, 1], padding='VALID', name='fc8')
         # _activation_summary(fc8)
 
-    logits = tf.reshape(fc8, [-1, 250])
+    logits = tf.reshape(tf.nn.bias_add(fc8, biases8), [-1, 250])
     
+    if visualize:
+        activations = {
+            'relu1': relu1,
+            'relu2': relu2,
+            'relu3': relu3,
+            'relu4': relu4,
+            'relu5': relu5,
+            'relu6': relu6,
+            'relu7': relu7
+        }
+        return (logits, activations)
     return logits
 
 def loss(logits, labels):
@@ -168,7 +179,7 @@ def training(loss, lr, decay_steps=100, decay_rate=0.96, staircase=True, pretrai
     tf.summary.scalar('learning_rate', learning_rate)
     return train_op
 
-def evaluation(logits, labels, is_train):
+def evaluation(logits, labels, k, is_train):
     """Evaluates the number of correct predictions for the given logits and labels
 
     Args:
@@ -180,5 +191,5 @@ def evaluation(logits, labels, is_train):
     """
     if not is_train:
         logits = tf.reduce_sum(tf.reshape(logits, [10, -1, 250]), axis=0)
-    correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), 1)
+    correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), k)
     return tf.reduce_sum(tf.cast(correct, tf.int32))

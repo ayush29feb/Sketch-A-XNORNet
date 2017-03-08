@@ -190,7 +190,7 @@ def main(_):
     print('Starting the training...')
     net = sn
     if FLAGS.net == 'snbw':
-        net = bwsn
+        net = snbw
     elif FLAGS.net == 'snxnor':
         net = snxnor
     run_training(net=net)

@@ -17,6 +17,8 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from data_layer import DataLayer, load_pretrained_model
 import sketchnet as sn
+import bwsketchnet as snbw
+import sketchxnornet as snxnor
 
 FLAGS = None
 
@@ -60,7 +62,7 @@ def do_eval(sess, eval_correct, images_placeholder, labels_placeholder, dataset,
     print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f (%.3f sec)' %
         (num_examples, true_count, precision, duration))
 
-def run_training():
+def run_training(net=sn):
     """Trains and evaluates the Sketch-A-Net network
     """
     # Instantiate the data layer to have easy access of the dataset
@@ -80,20 +82,20 @@ def run_training():
 
         ############### Declare all the Ops for the graph ###############
         # Build a graph that computes predictions from the inference model
-        logits = sn.inference(images_placeholder, dr_placeholder, pretrained=pretrained)
+        logits = net.inference(images_placeholder, dr_placeholder, pretrained=pretrained)
 
         # Add the loss Op to the graph
-        loss = sn.loss(logits, labels_placeholder)
+        loss = net.loss(logits, labels_placeholder)
 
         # create global_step variable
         global_step = tf.Variable(10000 if FLAGS.no_pretrain else 0, name='global_step', trainable=False)
 
         # Add the Op to calculate and apply gradient to the graph
-        train_op = sn.training(loss, FLAGS.lr, global_step, decay_steps=FLAGS.decay_step, decay_rate=FLAGS.decay_rate)
+        train_op = net.training(loss, FLAGS.lr, global_step, decay_steps=FLAGS.decay_step, decay_rate=FLAGS.decay_rate)
 
         # Evaluation
-        eval_correct_train = sn.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=True)
-        eval_correct_test = sn.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=False)
+        eval_correct_train = net.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=True)
+        eval_correct_test = net.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=False)
 
         # Add the variable initializer Op to the graph
         init = tf.global_variables_initializer()
@@ -186,10 +188,21 @@ def main(_):
     if not tf.gfile.Exists(FLAGS.data_path):
         raise IOError('The file at' + FLAGS.data_path + ' does not exsits.')
     print('Starting the training...')
-    run_training()
+    net = sn
+    if FALGS.net == 'snbw':
+        net = bwsn
+    elif FLAGS.net == 'snxnor':
+        net = snxnor
+    run_training(net=net)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'net',
+        type='str',
+        default='sn',
+        help='The Network to be run, sn, snbw, snxnor'
+    )
     parser.add_argument(
         '--logdir',
         type=str,

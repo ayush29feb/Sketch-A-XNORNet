@@ -14,8 +14,8 @@ def py_func(func, inp, Tout, stateful=True, name=None, grad=None):
         return tf.py_func(func, inp, Tout, stateful=stateful, name=name)
 
 def binarize_weights(x, name=None):
-    """Creates a the binarize_weights Op with f as forward pass
-    and df as the gradient for the backword pass
+    """Creates the binarize_weights Op with f as forward pass
+    and df as the gradient for the backward pass
 
     Args:
         x: The input Tensor
@@ -39,4 +39,25 @@ def binarize_weights(x, name=None):
         
     with ops.name_scope(name, 'BinarizeWeights', [x]) as name:
         fx = py_func(f, [x], [tf.float32], name=name, grad=df)
+        return fx[0]
+
+def binarize_inputs(x, name=None):
+    """Creates the binarize_inputs Op with f as forward pass
+    and fd as the gradient for the backward pass
+
+    Args:
+        x: The input Tensor
+        name: the name for the Op
+
+    Returns:
+        The output tensor
+    """
+    def f(x):
+        pass
+    
+    def df(op grad):
+        pass
+    
+    with ops.name_scope(name, 'BinarizeInputs', [x]) as name:
+        fx = py_func(f, [x], [tf.flaot32], name=name, grad=df)
         return fx[0]

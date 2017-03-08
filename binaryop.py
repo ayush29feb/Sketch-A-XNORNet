@@ -26,9 +26,9 @@ def binarize_weights(x, name=None):
     """
     def f(x):
         alpha = np.abs(x).sum(0).sum(0).sum(0) / x[:,:,:,0].size
-        b = np.sign(x)
-        b[b == 0] = 1
-        return b * alpha
+        y = np.sign(x)
+        y[y == 0] = 1
+        return y * alpha
 
     def df(op, grad):
         x = op.inputs[0]
@@ -41,8 +41,8 @@ def binarize_weights(x, name=None):
         fx = py_func(f, [x], [tf.float32], name=name, grad=df)
         return fx[0]
 
-def binarize_inputs(x, name=None):
-    """Creates the binarize_inputs Op with f as forward pass
+def binary_activation(x, name=None):
+    """Creates the binary_activation Op with f as forward pass
     and fd as the gradient for the backward pass
 
     Args:
@@ -53,10 +53,14 @@ def binarize_inputs(x, name=None):
         The output tensor
     """
     def f(x):
-        pass
+        y = np.sign(x)
+        y[b == 0] = 1
+        return y
     
-    def df(op grad):
-        pass
+    def df(op, grad):
+        x = op.inputs[0]
+        alpha = tf.cast(tf.less_equal(tf.abs(x), 1), tf.float32) # alpha = (|x| <= 1) * 1
+        return tf.multiply(grad, alpha) # grad * alpha
     
     with ops.name_scope(name, 'BinarizeInputs', [x]) as name:
         fx = py_func(f, [x], [tf.flaot32], name=name, grad=df)

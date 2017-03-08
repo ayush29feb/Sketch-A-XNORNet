@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 from data_layer import DataLayer
-from binaryop import binarize_weights
+from binaryop import binarize_weights, binary_activation
 
 def weight_variable(shape, weights=None):
     """Initializes the weights variable for a required layer using the
@@ -35,6 +35,12 @@ def bias_variable(shape, biases=None):
         raise ValueError('The pretrained shapes don\'t match with the layer shapes')
     initial = tf.truncated_normal(shape, stddev=0.1) if biases is None else biases
     return tf.Variable(initial, name='biases')
+
+def batch_norm_layer(x, name):
+    with tf.name_scope(name) as scope:
+        mean, variance = tf.nn.moments(x, axes=[1, 2], keep_dims=False)
+        norm = tf.nn.batch_normalization(x, mean, variance, None, None, 1e-5)
+        return norm
 
 def _activation_summary(x):
   """Helper to create summaries for activations.
@@ -77,7 +83,11 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         weights2 = weight_variable((5, 5, 64, 128), None if weights is None else weights['conv2'])
         bweights2 = binarize_weights(weights2)
         biases2 = bias_variable((128,), None if biases is None else biases['conv2'])
-        conv2 = tf.nn.conv2d(pool1, bweights2, [1, 1, 1, 1], padding='VALID', name='conv2')
+        
+        norm2 = batch_norm_layer(pool1, name='norm2')
+        binAct2 = binary_activation(norm2, name='binAct2')
+        
+        conv2 = tf.nn.conv2d(binAct2, bweights2, [1, 1, 1, 1], padding='VALID', name='conv2')
         relu2 = tf.nn.relu(tf.nn.bias_add(conv2, biases2), name='relu2')
         pool2 = tf.nn.max_pool(relu2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
         # _activation_summary(relu2)
@@ -87,7 +97,11 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         weights3 = weight_variable((3, 3, 128, 256), None if weights is None else weights['conv3'])
         bweights3 = binarize_weights(weights3)
         biases3 = bias_variable((256,), None if biases is None else biases['conv3'])
-        conv3 = tf.nn.conv2d(pool2, bweights3, [1, 1, 1, 1], padding='SAME', name='conv3')
+        
+        norm3 = batch_norm_layer(pool2, name='norm3')
+        binAct3 = binary_activation(norm3, name='binAct3')
+        
+        conv3 = tf.nn.conv2d(binAct3, bweights3, [1, 1, 1, 1], padding='SAME', name='conv3')
         relu3 = tf.nn.relu(tf.nn.bias_add(conv3, biases3), name='relu3')
         # _activation_summary(relu3)
 
@@ -96,7 +110,11 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         weights4 = weight_variable((3, 3, 256, 256), None if weights is None else weights['conv4'])
         bweights4 = binarize_weights(weights4)
         biases4 = bias_variable((256,), None if biases is None else biases['conv4'])
-        conv4 = tf.nn.conv2d(relu3, bweights4, [1, 1, 1, 1], padding='SAME', name='conv4')
+        
+        norm4 = batch_norm_layer(relu3, name='norm4')
+        binAct4 = binary_activation(norm4, name='binAct4')
+        
+        conv4 = tf.nn.conv2d(binAct4, bweights4, [1, 1, 1, 1], padding='SAME', name='conv4')
         relu4 = tf.nn.relu(tf.nn.bias_add(conv4, biases4), name='relu4')
         # _activation_summary(relu4)
 
@@ -105,7 +123,11 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         weights5 = weight_variable((3, 3, 256, 256), None if weights is None else weights['conv5'])
         bweights5 = binarize_weights(weights5)
         biases5 = bias_variable((256,), None if biases is None else biases['conv5'])
-        conv5 = tf.nn.conv2d(relu4, bweights5, [1, 1, 1, 1], padding='SAME', name='conv5')
+        
+        norm5 = batch_norm_layer(relu4, name='norm5')
+        binAct5 = binary_activation(norm5, name='binAct5')
+        
+        conv5 = tf.nn.conv2d(binAct5, bweights5, [1, 1, 1, 1], padding='SAME', name='conv5')
         relu5 = tf.nn.relu(tf.nn.bias_add(conv5, biases5), name='relu5')
         pool5 = tf.nn.max_pool(relu5, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool5')
         # _activation_summary(pool5)
@@ -115,7 +137,11 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         weights6 = weight_variable((7, 7, 256, 512), None if weights is None else weights['conv6'])
         bweights6 = binarize_weights(weights6)
         biases6 = bias_variable((512,), None if biases is None else biases['conv6'])
-        fc6 = tf.nn.conv2d(pool5, bweights6, [1, 1, 1, 1], padding='VALID', name='fc6')
+        
+        norm6 = batch_norm_layer(pool5, name='norm6')
+        binAct6 = binary_activation(norm6, name='binAct6')
+        
+        fc6 = tf.nn.conv2d(binAct6, bweights6, [1, 1, 1, 1], padding='VALID', name='fc6')
         relu6 = tf.nn.relu(tf.nn.bias_add(fc6, biases6), name='relu6')
         dropout6 = tf.nn.dropout(relu6, keep_prob=dropout_prob, name='dropout6')
         # _activation_summary(dropout6)
@@ -125,7 +151,11 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         weights7 = weight_variable((1, 1, 512, 512), None if weights is None else weights['conv7'])
         bweights7 = binarize_weights(weights7)
         biases7 = bias_variable((512,), None if biases is None else biases['conv7'])
-        fc7 = tf.nn.conv2d(dropout6, bweights7, [1, 1, 1, 1], padding='VALID', name='fc7')
+        
+        norm7 = batch_norm_layer(dropout6, name='norm7')
+        binAct7 = binary_activation(norm7, name='binAct7')
+        
+        fc7 = tf.nn.conv2d(binAct7, bweights7, [1, 1, 1, 1], padding='VALID', name='fc7')
         relu7 = tf.nn.relu(tf.nn.bias_add(fc7, biases7), name='relu7')
         dropout7 = tf.nn.dropout(relu7, keep_prob=dropout_prob, name='dropout7')
         # _activation_summary(dropout7)

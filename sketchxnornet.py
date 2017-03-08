@@ -38,7 +38,7 @@ def bias_variable(shape, biases=None):
 
 def batch_norm_layer(x, name):
     with tf.name_scope(name) as scope:
-        mean, variance = tf.nn.moments(x, axes=[1, 2], keep_dims=False)
+        mean, variance = tf.nn.moments(x, axes=[0, 1, 2], keep_dims=False)
         norm = tf.nn.batch_normalization(x, mean, variance, None, None, 1e-5)
         return norm
 

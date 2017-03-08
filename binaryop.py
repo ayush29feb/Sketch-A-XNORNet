@@ -54,7 +54,7 @@ def binary_activation(x, name=None):
     """
     def f(x):
         y = np.sign(x)
-        y[b == 0] = 1
+        y[y == 0] = 1
         return y
     
     def df(op, grad):
@@ -63,5 +63,5 @@ def binary_activation(x, name=None):
         return tf.multiply(grad, alpha) # grad * alpha
     
     with ops.name_scope(name, 'BinarizeInputs', [x]) as name:
-        fx = py_func(f, [x], [tf.flaot32], name=name, grad=df)
+        fx = py_func(f, [x], [tf.float32], name=name, grad=df)
         return fx[0]

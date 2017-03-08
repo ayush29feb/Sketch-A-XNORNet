@@ -16,7 +16,7 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from data_layer import DataLayer, load_pretrained_model
-import bwsketchnet as sn
+import sketchxnornet as sn
 
 FLAGS = None
 
@@ -85,9 +85,11 @@ def run_training():
         # Add the loss Op to the graph
         loss = sn.loss(logits, labels_placeholder)
 
+        # create global_step variable
+        global_step = tf.Variable(10000 if FLAGS.no_pretrain else 0, name='global_step', trainable=False)
+
         # Add the Op to calculate and apply gradient to the graph
-        pretrain_global_step = 10000 if FLAGS.no_pretrain else 0
-        train_op = sn.training(loss, lr=FLAGS.lr, decay_steps=FLAGS.decay_step, decay_rate=FLAGS.decay_rate, pretrain_global_step=pretrain_global_step)
+        train_op = sn.training(loss, FLAGS.lr, global_step, decay_steps=FLAGS.decay_step, decay_rate=FLAGS.decay_rate)
 
         # Evaluation
         eval_correct_train = sn.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=True)
@@ -112,6 +114,10 @@ def run_training():
                 print('Model Restored')
             else:
                 sess.run(init)
+
+            # Reset Global Step
+            if FLAGS.reset_step:
+                sess.run(tf.assign(global_step, 0))
 
             # the training loop
             if not FLAGS.eval_only:
@@ -142,7 +148,7 @@ def run_training():
                     if (step + 1) % (5 * epoch_size) == 0:
                         # Save Model
                         checkpoint_file = os.path.join(FLAGS.logdir, 'ckpt', 'model.ckpt')
-                        saver.save(sess, checkpoint_file, global_step=step)
+                        saver.save(sess, checkpoint_file, global_step=global_step)
                         print('Checkpoint Saved!')
 
                     # evalutae the model every 10 epochs
@@ -253,6 +259,11 @@ if __name__ == '__main__':
         '--no_pretrain',
         action='store_false',
         default=True
+    )
+    parser.add_argument(
+        '--reset_step',
+        action='store_true',
+        default=False
     )
 
     FLAGS, unparsed = parser.parse_known_args()

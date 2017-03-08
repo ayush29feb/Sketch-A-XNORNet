@@ -189,7 +189,7 @@ def main(_):
         raise IOError('The file at' + FLAGS.data_path + ' does not exsits.')
     print('Starting the training...')
     net = sn
-    if FALGS.net == 'snbw':
+    if FLAGS.net == 'snbw':
         net = bwsn
     elif FLAGS.net == 'snxnor':
         net = snxnor

@@ -233,7 +233,7 @@ if __name__ == '__main__':
         help='epoch size, the number of times the trainer should use the dataset'
     )
     parser.add_argument(
-        'topk',
+        '--topk',
         type=int,
         default=1,
         help='top-k accuracy'

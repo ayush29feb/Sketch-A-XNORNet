@@ -48,7 +48,7 @@ def _activation_summary(x):
   tf.summary.scalar(tensor_name + '/sparsity',
                                        tf.nn.zero_fraction(x))
 
-def inference(images, dropout_prob=1.0, pretrained=(None, None)):
+def inference(images, dropout_prob=1.0, pretrained=(None, None), visualize=False):
     """This prepares the tensorflow graph for the vanilla Sketch-A-Net network
     and returns the tensorflow Op from the last fully connected layer
 
@@ -130,6 +130,17 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
 
     logits = tf.reshape(fc8, [-1, 250])
     
+    if visualize:
+        activations = {
+            'relu1': relu1,
+            'relu2': relu2,
+            'relu3': relu3,
+            'relu4': relu4,
+            'relu5': relu5,
+            'relu6': relu6,
+            'relu7': relu7
+        }
+        return (logits, activations)
     return logits
 
 def loss(logits, labels):

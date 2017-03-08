@@ -135,16 +135,16 @@ def run_training(net=sn):
                         labels_placeholder: labels,
                         dr_placeholder: FLAGS.dr
                     }
-                    _, loss_value, summary_str = sess.run([train_op, loss, summary_merged], feed_dict=feed_dict)
+                    _, loss_value, summary_str, g_step = sess.run([train_op, loss, summary_merged, global_step], feed_dict=feed_dict)
                     
                     duration = time.time() - start_time
 
                     # save and print the status every 10 steps
                     if step % epoch_size == 0:
-                        summary_writer.add_summary(summary_str, step)
+                        summary_writer.add_summary(summary_str, g_step)
                     
                     if step % 10 == 0:
-                        print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+                        print('Step %d: loss = %.2f (%.3f sec)' % (g_step, loss_value, duration))
 
                     # save model every 5 epochs
                     if (step + 1) % (5 * epoch_size) == 0:
@@ -179,7 +179,7 @@ def run_training(net=sn):
                     is_train=False)
 
 def main(_):
-    if now tf.gfile.Exists(os.path.join(FLAGS.logdir, 'log')):
+    if not tf.gfile.Exists(os.path.join(FLAGS.logdir, 'log')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'log'))
     if not tf.gfile.Exists(os.path.join(FLAGS.logdir, 'ckpt')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'ckpt'))

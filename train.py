@@ -106,7 +106,7 @@ def run_training(net=sn):
         # Create a session for running the Ops on the graph
         with tf.Session() as sess:
             # create a summary writer
-            summary_writer = tf.summary.FileWriter(os.path.join(FLAGS.logdir, 'log'), sess.graph)
+            summary_writer = tf.summary.FileWriter(os.path.join(FLAGS.logdir, 'log', str(np.random.randint(0, 1E+8))), sess.graph)
             summary_merged = tf.summary.merge_all()
 
             # Restore the variables or Run the Op to initialize variables
@@ -179,11 +179,10 @@ def run_training(net=sn):
                     is_train=False)
 
 def main(_):
-    if tf.gfile.Exists(os.path.join(FLAGS.logdir, 'log')):
-        tf.gfile.DeleteRecursively(os.path.join(FLAGS.logdir, 'log'))
+    if now tf.gfile.Exists(os.path.join(FLAGS.logdir, 'log')):
+        tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'log'))
     if not tf.gfile.Exists(os.path.join(FLAGS.logdir, 'ckpt')):
         tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'ckpt'))
-    tf.gfile.MakeDirs(os.path.join(FLAGS.logdir, 'log'))
     
     if not tf.gfile.Exists(FLAGS.data_path):
         raise IOError('The file at' + FLAGS.data_path + ' does not exsits.')

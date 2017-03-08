@@ -138,7 +138,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None), visualize=False
         fc8 = tf.nn.conv2d(dropout7, weights8, [1, 1, 1, 1], padding='VALID', name='fc8')
         # _activation_summary(fc8)
 
-    logits = tf.reshape(fc8, [-1, 250])
+    logits = tf.reshape(tf.nn.bias_add(fc8, biases8), [-1, 250])
 
     if visualize:
         activations = {

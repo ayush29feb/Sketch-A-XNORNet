@@ -16,7 +16,7 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from data_layer import DataLayer, load_pretrained_model
-import sketchxnornet as sn
+import sketchnet as sn
 
 FLAGS = None
 

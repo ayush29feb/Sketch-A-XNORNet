@@ -199,7 +199,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'net',
-        type='str',
+        type=str,
         default='sn',
         help='The Network to be run, sn, snbw, snxnor'
     )

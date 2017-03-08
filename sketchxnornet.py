@@ -57,7 +57,7 @@ def _activation_summary(x):
   # tf.summary.scalar(tensor_name + '/sparsity',
   #                                     tf.nn.zero_fraction(x))
 
-def inference(images, dropout_prob=1.0, pretrained=(None, None)):
+def inference(images, dropout_prob=1.0, pretrained=(None, None), visualize=False):
     """This prepares the tensorflow graph for the vanilla Sketch-A-Net network
     and returns the tensorflow Op from the last fully connected layer
 
@@ -74,8 +74,8 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         weights1 = weight_variable((15, 15, 6, 64), None if weights is None else weights['conv1'])
         biases1 = bias_variable((64,), None if biases is None else biases['conv1'])
         conv1 = tf.nn.conv2d(images, weights1, [1, 3, 3, 1], padding='VALID', name='conv1')
-        relu1 = tf.nn.relu(tf.nn.bias_add(conv1, biases1), name='relu1')
-        pool1 = tf.nn.max_pool(relu1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool1')
+        # relu1 = tf.nn.relu(tf.nn.bias_add(conv1, biases1), name='relu1')
+        pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool1')
         # _activation_summary(relu1)
 
     # Layer 2
@@ -88,8 +88,8 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         binAct2 = binary_activation(norm2, name='binAct2')
         
         conv2 = tf.nn.conv2d(binAct2, bweights2, [1, 1, 1, 1], padding='VALID', name='conv2')
-        relu2 = tf.nn.relu(tf.nn.bias_add(conv2, biases2), name='relu2')
-        pool2 = tf.nn.max_pool(relu2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
+        # relu2 = tf.nn.relu(tf.nn.bias_add(conv2, biases2), name='relu2')
+        pool2 = tf.nn.max_pool(conv2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool2')
         # _activation_summary(relu2)
 
     # Layer 3
@@ -102,7 +102,7 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         binAct3 = binary_activation(norm3, name='binAct3')
         
         conv3 = tf.nn.conv2d(binAct3, bweights3, [1, 1, 1, 1], padding='SAME', name='conv3')
-        relu3 = tf.nn.relu(tf.nn.bias_add(conv3, biases3), name='relu3')
+        # relu3 = tf.nn.relu(tf.nn.bias_add(conv3, biases3), name='relu3')
         # _activation_summary(relu3)
 
     # Layer 4
@@ -111,11 +111,11 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         bweights4 = binarize_weights(weights4)
         biases4 = bias_variable((256,), None if biases is None else biases['conv4'])
         
-        norm4 = batch_norm_layer(relu3, name='norm4')
+        norm4 = batch_norm_layer(conv3, name='norm4')
         binAct4 = binary_activation(norm4, name='binAct4')
         
         conv4 = tf.nn.conv2d(binAct4, bweights4, [1, 1, 1, 1], padding='SAME', name='conv4')
-        relu4 = tf.nn.relu(tf.nn.bias_add(conv4, biases4), name='relu4')
+        # relu4 = tf.nn.relu(tf.nn.bias_add(conv4, biases4), name='relu4')
         # _activation_summary(relu4)
 
     # Layer 5
@@ -124,12 +124,12 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         bweights5 = binarize_weights(weights5)
         biases5 = bias_variable((256,), None if biases is None else biases['conv5'])
         
-        norm5 = batch_norm_layer(relu4, name='norm5')
+        norm5 = batch_norm_layer(conv4, name='norm5')
         binAct5 = binary_activation(norm5, name='binAct5')
         
         conv5 = tf.nn.conv2d(binAct5, bweights5, [1, 1, 1, 1], padding='SAME', name='conv5')
-        relu5 = tf.nn.relu(tf.nn.bias_add(conv5, biases5), name='relu5')
-        pool5 = tf.nn.max_pool(relu5, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool5')
+        # relu5 = tf.nn.relu(tf.nn.bias_add(conv5, biases5), name='relu5')
+        pool5 = tf.nn.max_pool(conv5, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool5')
         # _activation_summary(pool5)
 
     # Layer 6
@@ -142,8 +142,8 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         binAct6 = binary_activation(norm6, name='binAct6')
         
         fc6 = tf.nn.conv2d(binAct6, bweights6, [1, 1, 1, 1], padding='VALID', name='fc6')
-        relu6 = tf.nn.relu(tf.nn.bias_add(fc6, biases6), name='relu6')
-        dropout6 = tf.nn.dropout(relu6, keep_prob=dropout_prob, name='dropout6')
+        # relu6 = tf.nn.relu(tf.nn.bias_add(fc6, biases6), name='relu6')
+        dropout6 = tf.nn.dropout(fc6, keep_prob=dropout_prob, name='dropout6')
         # _activation_summary(dropout6)
 
     # Layer 7
@@ -156,8 +156,8 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         binAct7 = binary_activation(norm7, name='binAct7')
         
         fc7 = tf.nn.conv2d(binAct7, bweights7, [1, 1, 1, 1], padding='VALID', name='fc7')
-        relu7 = tf.nn.relu(tf.nn.bias_add(fc7, biases7), name='relu7')
-        dropout7 = tf.nn.dropout(relu7, keep_prob=dropout_prob, name='dropout7')
+        # relu7 = tf.nn.relu(tf.nn.bias_add(fc7, biases7), name='relu7')
+        dropout7 = tf.nn.dropout(fc7, keep_prob=dropout_prob, name='dropout7')
         # _activation_summary(dropout7)
 
     # Layer 8
@@ -168,7 +168,18 @@ def inference(images, dropout_prob=1.0, pretrained=(None, None)):
         # _activation_summary(fc8)
 
     logits = tf.reshape(fc8, [-1, 250])
-    
+
+    if visualize:
+        activations = {
+            # '1': relu1,
+            '2': binAct2,
+            '3': binAct3,
+            '4': binAct4,
+            '5': binAct5,
+            '6': binAct6,
+            '7': binAct7
+        }
+        return (logits, activations)
     return logits
 
 def loss(logits, labels):

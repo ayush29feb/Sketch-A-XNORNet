@@ -16,7 +16,7 @@ import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from data_layer import DataLayer, load_pretrained_model
-import bwsketchnet as sn
+import sketchnet as sn
 
 FLAGS = None
 
@@ -227,7 +227,7 @@ if __name__ == '__main__':
         help='epoch size, the number of times the trainer should use the dataset'
     )
     parser.add_argument(
-        'topk',
+        '--topk',
         type=int,
         default=1,
         help='top-k accuracy'

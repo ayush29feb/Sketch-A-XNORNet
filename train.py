@@ -90,8 +90,8 @@ def run_training():
         train_op = sn.training(loss, lr=FLAGS.lr, decay_steps=FLAGS.decay_step, decay_rate=FLAGS.decay_rate, pretrain_global_step=pretrain_global_step)
 
         # Evaluation
-        eval_correct_train = sn.evaluation(logits, labels_placeholder, is_train=True)
-        eval_correct_test = sn.evaluation(logits, labels_placeholder, is_train=False)
+        eval_correct_train = sn.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=True)
+        eval_correct_test = sn.evaluation(logits, labels_placeholder, k=FLAGS.topk, is_train=False)
 
         # Add the variable initializer Op to the graph
         init = tf.global_variables_initializer()
@@ -225,6 +225,12 @@ if __name__ == '__main__':
         type=int,
         default=500,
         help='epoch size, the number of times the trainer should use the dataset'
+    )
+    parser.add_argument(
+        'topk',
+        type=int,
+        default=1,
+        help='top-k accuracy'
     )
     parser.add_argument(
         '--data_path',

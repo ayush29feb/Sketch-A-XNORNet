@@ -183,7 +183,7 @@ def training(loss, lr, decay_steps=100, decay_rate=0.96, staircase=True, pretrai
     tf.summary.scalar('learning_rate', learning_rate)
     return train_op
 
-def evaluation(logits, labels, is_train):
+def evaluation(logits, labels, k, is_train):
     """Evaluates the number of correct predictions for the given logits and labels
 
     Args:
@@ -195,5 +195,5 @@ def evaluation(logits, labels, is_train):
     """
     if not is_train:
         logits = tf.reduce_sum(tf.reshape(logits, [10, -1, 250]), axis=0)
-    correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), 1)
+    correct = tf.nn.in_top_k(logits, tf.cast(labels[:tf.shape(logits)[0]], tf.int32), k)
     return tf.reduce_sum(tf.cast(correct, tf.int32))

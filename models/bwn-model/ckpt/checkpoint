@@ -1,2 +1,2 @@
-model_checkpoint_path: "/homes/iws/ayush29f/Development/Sketch-A-XNORNet/models/bwn-model/ckpt/model.ckpt-9999"
-all_model_checkpoint_paths: "/homes/iws/ayush29f/Development/Sketch-A-XNORNet/models/bwn-model/ckpt/model.ckpt-9999"
+model_checkpoint_path: "/Users/ayush/Development/ml/Sketch-A-XNORNet/models/bwn-model/ckpt/model.ckpt-9999"
+all_model_checkpoint_paths: "/Users/ayush/Development/ml/Sketch-A-XNORNet/models/bwn-model/ckpt/model.ckpt-9999"

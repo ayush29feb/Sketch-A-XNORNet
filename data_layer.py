@@ -36,6 +36,7 @@ class DataLayer:
         a_train_ = np.tile(np.arange(self.NUM_TRAIN_ITEMS_PER_CLASS), self.NUM_CLASSES).reshape(self.NUM_CLASSES, self.NUM_TRAIN_ITEMS_PER_CLASS)
         b_train_ = np.tile(np.arange(self.NUM_CLASSES) * self.NUM_ITEMS_PER_CLASS, self.NUM_TRAIN_ITEMS_PER_CLASS).reshape(self.NUM_TRAIN_ITEMS_PER_CLASS, self.NUM_CLASSES).T
         self.train_idxs = (a_train_ + b_train_).reshape(-1)
+        np.random.shuffle(self.train_idxs)
 
         a_test_ = np.tile(np.arange(self.NUM_TEST_ITEMS_PER_CLASS), self.NUM_CLASSES).reshape(self.NUM_CLASSES, self.NUM_TEST_ITEMS_PER_CLASS)
         b_test_ = np.tile(np.arange(self.NUM_CLASSES) * self.NUM_ITEMS_PER_CLASS, self.NUM_TEST_ITEMS_PER_CLASS).reshape(self.NUM_TEST_ITEMS_PER_CLASS, self.NUM_CLASSES).T
